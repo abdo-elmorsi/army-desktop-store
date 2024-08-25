@@ -1,5 +1,3 @@
-// src/components/Sidebar.jsx
-
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useLocalStorageUser } from '@/hooks';
@@ -15,49 +13,37 @@ const Sidebar = () => {
     navigate('/login');
   };
 
-  return (
-    <aside className="w-64 bg-white dark:bg-gray-800 shadow-md h-full flex flex-col">
-      <div className="p-4 flex-1">
-        {/* Sidebar Logo or Header */}
-        <div className="text-lg font-semibold text-primary mb-6">
-          Sidebar
-        </div>
+  // Define links with paths and labels
+  const links = [
+    { to: '/', label: 'القائمه الرئيسيه' },
+    { to: '/products', label: 'المنتجات' },
+    { to: '/stores', label: 'المخازن' },
+    { to: '/units', label: 'وحدات القياس' },
+    // Add more links here as needed
+  ];
 
-        {/* Navigation Links */}
+  // Helper function to determine if the link is active
+  const isActive = (path) => {
+    return location.pathname === path || location.pathname.startsWith(path + '/');
+  };
+
+  return (
+    <aside className="w-64 bg-gray-100 dark:bg-gray-900 shadow-lg h-full flex flex-col">
+      <div className="p-4 flex-1">
         <ul className="space-y-2">
-          <li>
-            <Link
-              to="/"
-              className={`block p-3 rounded-md transition-colors ${location.pathname === '/'
-                ? 'bg-gray-200 dark:bg-gray-700 text-primary'
-                : 'text-text dark:text-textLight hover:bg-gray-200 dark:hover:bg-gray-700'
-                }`}
-            >
-              Dashboard
-            </Link>
-          </li>
-          <li>
-            <Link
-              to="/profile"
-              className={`block p-3 rounded-md transition-colors ${location.pathname === '/profile'
-                ? 'bg-gray-200 dark:bg-gray-700 text-primary'
-                : 'text-text dark:text-textLight hover:bg-gray-200 dark:hover:bg-gray-700'
-                }`}
-            >
-              Profile
-            </Link>
-          </li>
-          <li>
-            <Link
-              to="/settings"
-              className={`block p-3 rounded-md transition-colors ${location.pathname === '/settings'
-                ? 'bg-gray-200 dark:bg-gray-700 text-primary'
-                : 'text-text dark:text-textLight hover:bg-gray-200 dark:hover:bg-gray-700'
-                }`}
-            >
-              Settings
-            </Link>
-          </li>
+          {links.map((link) => (
+            <li key={link.to}>
+              <Link
+                to={link.to}
+                className={`block p-3 rounded-md transition-all duration-300 ${isActive(link.to)
+                  ? 'bg-primary text-white shadow-lg'
+                  : 'text-gray-700 dark:text-gray-300 hover:bg-primary hover:text-white'
+                  }`}
+              >
+                {link.label}
+              </Link>
+            </li>
+          ))}
         </ul>
       </div>
 
@@ -65,10 +51,9 @@ const Sidebar = () => {
       <div className="p-4 border-t border-gray-200 dark:border-gray-700">
         {isAuthenticated && !isLoading && (
           <div>
-
             <Button
               onClick={logout}
-              className="w-full p-2 bg-red-500 text-white rounded-md hover:bg-red-600 focus:outline-none"
+              className="btn--secondary bg-red-500 border-none dark:bg-red-600 text-white w-full hover:bg-red-600 dark:hover:bg-red-700"
             >
               Logout
             </Button>

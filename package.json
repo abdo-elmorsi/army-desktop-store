@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@heroicons/react": "^2.1.5",
+    "dexie": "^4.0.8",
     "electron-updater": "^6.1.8",
     "react-router-dom": "^6.26.1"
   },

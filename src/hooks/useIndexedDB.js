@@ -1,215 +1,184 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import Dexie from "dexie";
 
-const DB_NAME = "myDatabase";
-const DB_VERSION = 2;
-
-const openDb = () => {
-    return new Promise((resolve, reject) => {
-        const request = indexedDB.open(DB_NAME, DB_VERSION);
-
-        request.onupgradeneeded = (event) => {
-            const db = event.target.result;
-
-            if (!db.objectStoreNames.contains("users")) {
-                const userStore = db.createObjectStore("users", {
-                    keyPath: "id",
-                    autoIncrement: true,
-                });
-                userStore.createIndex("username", "username", { unique: true });
-            }
-            if (!db.objectStoreNames.contains("categories")) {
-                db.createObjectStore("categories", {
-                    keyPath: "id",
-                    autoIncrement: true,
-                });
-            }
-            if (!db.objectStoreNames.contains("products")) {
-                db.createObjectStore("products", {
-                    keyPath: "id",
-                    autoIncrement: true,
-                });
-            }
-        };
-
-        request.onsuccess = (event) => resolve(event.target.result);
-        request.onerror = (event) => reject(event.target.error);
-    });
-};
-
-const transactionWrapper = async (storeName, mode, callback) => {
-    try {
-        const db = await openDb();
-        const transaction = db.transaction(storeName, mode);
-        const store = transaction.objectStore(storeName);
-        return callback(store);
-    } catch (err) {
-        throw new Error(err);
-    }
-};
+const db = new Dexie("myDatabase");
+db.version(1).stores({
+    users: "++id",
+    stores: "++id",
+    products: "++id",
+    units: "++id",
+});
 
 const useIndexedDB = (storeName) => {
-    const [data, setData] = useState([]);
-    const [error, setError] = useState(null);
-    const [loading, setLoading] = useState(true); // Add loading state
+    const [state, setState] = useState({
+        data: [],
+        error: null,
+        loading: true,
+    });
 
     useEffect(() => {
         const fetchData = async () => {
-            setLoading(true); // Start loading
+            setState({ data: [], error: null, loading: true });
             try {
-                const result = await transactionWrapper(storeName, "readonly", (store) => {
-                    return new Promise((resolve, reject) => {
-                        const request = store.getAll();
-                        request.onsuccess = () => resolve(request.result);
-                        request.onerror = () => reject(request.error);
-                    });
-                });
-                setData(result);
+                const result = await db[storeName].toArray();
+                setState({ data: result, error: null, loading: false });
             } catch (err) {
-                setError(err);
-            } finally {
-                setLoading(false); // End loading
+                setState({
+                    data: [],
+                    error: err.message || "Error fetching data",
+                    loading: false,
+                });
             }
         };
 
         fetchData();
     }, [storeName]);
 
-    const addItem = async (item) => {
-        setLoading(true); // Start loading
+    const addItem = useCallback(
+        async (item) => {
+            try {
+                setState((prev) => ({ ...prev, loading: true }));
+                const id = await db[storeName].add(item);
+                setState((prev) => ({
+                    ...prev,
+                    data: [...prev.data, { ...item, id }],
+                    loading: false,
+                }));
+            } catch (err) {
+                setState((prev) => ({
+                    ...prev,
+                    error: err.message || "Error adding item",
+                    loading: false,
+                }));
+            }
+        },
+        [storeName]
+    );
+
+    const updateItem = useCallback(
+        async (id, item) => {
+            try {
+                setState((prev) => ({ ...prev, loading: true }));
+                await db[storeName].update(id, item);
+                setState((prev) => ({
+                    ...prev,
+                    data: prev.data.map((i) =>
+                        i.id === id ? { ...item, id } : i
+                    ),
+                    loading: false,
+                }));
+            } catch (err) {
+                setState((prev) => ({
+                    ...prev,
+                    error: err.message || "Error updating item",
+                    loading: false,
+                }));
+            }
+        },
+        [storeName]
+    );
+
+    const deleteItem = useCallback(
+        async (id) => {
+            try {
+                setState((prev) => ({ ...prev, loading: true }));
+                await db[storeName].delete(id);
+                setState((prev) => ({
+                    ...prev,
+                    data: prev.data.filter((i) => i.id !== id),
+                    loading: false,
+                }));
+            } catch (err) {
+                setState((prev) => ({
+                    ...prev,
+                    error: err.message || "Error deleting item",
+                    loading: false,
+                }));
+            }
+        },
+        [storeName]
+    );
+
+    const registerUser = useCallback(async (username, password, role) => {
         try {
-            await transactionWrapper(storeName, "readwrite", (store) => {
-                return new Promise((resolve, reject) => {
-                    const request = store.add(item);
-                    request.onsuccess = () => {
-                        setData((prev) => [
-                            ...prev,
-                            { ...item, id: request.result },
-                        ]);
-                        resolve();
-                    };
-                    request.onerror = () => reject(request.error);
-                });
-            });
+            setState((prev) => ({ ...prev, loading: true }));
+            await db.users.add({ username, password, role });
+            setState((prev) => ({ ...prev, loading: false }));
         } catch (err) {
-            setError(err);
-        } finally {
-            setLoading(false); // End loading
+            setState((prev) => ({
+                ...prev,
+                error: err.message || "Error registering user",
+                loading: false,
+            }));
         }
-    };
+    }, []);
 
-    const updateItem = async (id, item) => {
-        setLoading(true); // Start loading
+    const loginUser = useCallback(async (username, password) => {
+        setState((prev) => ({ ...prev, loading: true }));
         try {
-            await transactionWrapper(storeName, "readwrite", (store) => {
-                return new Promise((resolve, reject) => {
-                    const request = store.put({ ...item, id });
-                    request.onsuccess = () => {
-                        setData((prev) =>
-                            prev.map((i) => (i.id === id ? { ...item, id } : i))
-                        );
-                        resolve();
-                    };
-                    request.onerror = () => reject(request.error);
-                });
-            });
+            const user = await db.users
+                .where("username")
+                .equals(username)
+                .first();
+            if (user && user.password === password) {
+                setState((prev) => ({ ...prev, loading: false }));
+                return user;
+            } else {
+                throw new Error("Invalid login credentials");
+            }
         } catch (err) {
-            setError(err);
-        } finally {
-            setLoading(false); // End loading
+            setState((prev) => ({
+                ...prev,
+                error: err.message || "Error logging in",
+                loading: false,
+            }));
+            throw err;
         }
-    };
+    }, []);
 
-    const deleteItem = async (id) => {
-        setLoading(true); // Start loading
+    const getUserRole = useCallback(async (username) => {
+        setState((prev) => ({ ...prev, loading: true }));
         try {
-            await transactionWrapper(storeName, "readwrite", (store) => {
-                return new Promise((resolve, reject) => {
-                    const request = store.delete(id);
-                    request.onsuccess = () => {
-                        setData((prev) => prev.filter((i) => i.id !== id));
-                        resolve();
-                    };
-                    request.onerror = () => reject(request.error);
-                });
-            });
+            const user = await db.users
+                .where("username")
+                .equals(username)
+                .first();
+            setState((prev) => ({ ...prev, loading: false }));
+            return user ? user.role : null;
         } catch (err) {
-            setError(err);
-        } finally {
-            setLoading(false); // End loading
+            setState((prev) => ({
+                ...prev,
+                error: err.message || "Error fetching user role",
+                loading: false,
+            }));
+            throw err;
         }
-    };
+    }, []);
 
-    // Authentication Methods
-    const registerUser = async (username, password, role) => {
-        setLoading(true); // Start loading
-        try {
-            await addItem({ username, password, role });
-        } catch (err) {
-            setError(err);
-        } finally {
-            setLoading(false); // End loading
-        }
-    };
+    const value = useMemo(
+        () => ({
+            data: state.data,
+            error: state.error,
+            loading: state.loading,
+            addItem,
+            updateItem,
+            deleteItem,
+            registerUser,
+            loginUser,
+            getUserRole,
+        }),
+        [
+            state,
+            addItem,
+            updateItem,
+            deleteItem,
+            registerUser,
+            loginUser,
+            getUserRole,
+        ]
+    );
 
-    const loginUser = async (username, password) => {
-        setLoading(true); // Start loading
-        try {
-            return await transactionWrapper("users", "readonly", (store) => {
-                return new Promise((resolve, reject) => {
-                    const index = store.index("username");
-                    const request = index.get(username);
-
-                    request.onsuccess = () => {
-                        const user = request.result;
-                        if (user && user.password === password) {
-                            resolve(user);
-                        } else {
-                            reject("بيانات اعتماد تسجيل الدخول غير صالحة");
-                        }
-                    };
-                    request.onerror = () => reject(request.error);
-                });
-            });
-        } catch (err) {
-            setError(err);
-        } finally {
-            setLoading(false); // End loading
-        }
-    };
-
-    const getUserRole = async (username) => {
-        setLoading(true); // Start loading
-        try {
-            return await transactionWrapper("users", "readonly", (store) => {
-                return new Promise((resolve, reject) => {
-                    const index = store.index("username");
-                    const request = index.get(username);
-
-                    request.onsuccess = () => {
-                        const user = request.result;
-                        resolve(user ? user.role : null);
-                    };
-                    request.onerror = () => reject(request.error);
-                });
-            });
-        } catch (err) {
-            setError(err);
-        } finally {
-            setLoading(false); // End loading
-        }
-    };
-
-    return {
-        data,
-        error,
-        loading, // Return loading state
-        addItem,
-        updateItem,
-        deleteItem,
-        registerUser,
-        loginUser,
-        getUserRole,
-    };
+    return value;
 };
 
 export default useIndexedDB;
