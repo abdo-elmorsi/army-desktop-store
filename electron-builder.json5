@@ -35,6 +35,6 @@
   "publish": {
     "provider": "generic",
     "channel": "latest",
-    "url": "https://github.com/abdo-elmorsi/dewsktop-troe/releases/download/${version}/"  // Update this URL
+    "url": "https://github.com/abdo-elmorsi/electron-store/releases/download/${version}/"  // Update this URL
   }
 }
