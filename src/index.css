@@ -1,0 +1,30 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+    font-weight: 400;
+    direction: rtl;
+
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-text-size-adjust: 100%;
+}
+body {
+    margin: 0;
+}
+@layer components {
+    .btn {
+        @apply rounded-lg text-base font-medium  py-2 px-4 disabled:cursor-not-allowed disabled:opacity-50;
+    }
+    .btn--primary {
+        @apply bg-primary text-white hover:bg-hoverPrimary disabled:hover:bg-hoverPrimary;
+    }
+    .btn--secondary {
+        @apply border border-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900  text-primary dark:text-white;
+    }
+}

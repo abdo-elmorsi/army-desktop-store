@@ -1,0 +1,40 @@
+{
+  "appId": "com.yourcompany.yourapp",  // Replace with your app ID
+  "asar": true,
+  "directories": {
+    "output": "release/${version}"  // Ensure this path is correct
+  },
+  "files": [
+    "dist-electron/**/*",  // Ensure all files within dist-electron are included
+    "dist/**/*"            // Ensure all files within dist are included
+  ],
+  "mac": {
+    "artifactName": "${productName}_${version}.${ext}",
+    "target": [
+      "dmg",
+      "zip"
+    ]
+  },
+  "win": {
+    "target": [
+      {
+        "target": "nsis",
+        "arch": [
+          "x64"
+        ]
+      }
+    ],
+    "artifactName": "${productName}_${version}.${ext}"
+  },
+  "nsis": {
+    "oneClick": false,
+    "perMachine": false,
+    "allowToChangeInstallationDirectory": true,
+    "deleteAppDataOnUninstall": false
+  },
+  "publish": {
+    "provider": "generic",
+    "channel": "latest",
+    "url": "https://github.com/abdo-elmorsi/dewsktop-troe/releases/download/${version}/"  // Update this URL
+  }
+}
