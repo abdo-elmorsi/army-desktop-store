@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 import { Input, Button } from '@/components';
 import { useInput, useIndexedDB } from '@/hooks';
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
 const Login = () => {
   const userName = useInput("", null);
@@ -38,7 +38,7 @@ const Login = () => {
     <div className='h-screen flex  items-center justify-center bg-gray-100 dark:bg-gray-900'>
       <div className="w-full max-w-md p-6 bg-white rounded-lg shadow-md dark:bg-gray-800">
         <h2 className="text-2xl font-bold mb-4 text-primary">تسجيل الدخول</h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 px-4">
           <div>
             <Input
               label={"ألاسم"}
@@ -50,7 +50,7 @@ const Login = () => {
             label={"الباسورد"}
             name="password"
             type={showPass ? "text" : "password"}
-            prepend={showPass ? <EyeIcon onClick={handleShowPass} className="cursor-pointer text-primary" width={"25"} /> : <EyeSlashIcon onClick={handleShowPass} className="cursor-pointer text-primary" width={"25"} />}
+            prepend={showPass ? <FaEye onClick={handleShowPass} className="cursor-pointer text-primary" size={22} /> : <FaEyeSlash onClick={handleShowPass} className="cursor-pointer text-primary" size={22} />}
             {...password.bind}
           />
           <Button

@@ -27,13 +27,13 @@ ul {
 }
 @layer components {
     .btn {
-        @apply rounded-lg text-base font-medium  py-2 px-4 disabled:cursor-not-allowed disabled:opacity-50 border-none;
+        @apply cursor-pointer rounded-lg text-base font-medium  py-2 px-4 disabled:cursor-not-allowed disabled:opacity-50 border-none;
     }
     .btn--primary {
         @apply bg-primary text-white hover:bg-hoverPrimary disabled:hover:bg-hoverPrimary;
     }
     .btn--secondary {
-        @apply border border-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900  text-primary dark:text-white;
+        @apply border border-gray-300 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-800  text-primary dark:text-white;
     }
     .btn--red {
         @apply bg-red-500 text-white;

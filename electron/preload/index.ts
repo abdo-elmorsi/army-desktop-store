@@ -1,4 +1,4 @@
-import { ipcRenderer, contextBridge, IpcRendererEvent } from "electron";
+import { ipcRenderer, contextBridge, type IpcRendererEvent } from "electron";
 
 
 

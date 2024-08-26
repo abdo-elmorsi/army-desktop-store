@@ -21,14 +21,14 @@ const Units = () => {
       <h1 className="text-2xl mb-4 text-gray-800 dark:text-white">وحدات القياس</h1>
       <Link
         to="/units/add"
-        className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 mb-4 inline-block"
+        className="bg-primary text-white px-4 py-2 rounded hover:bg-hoverPrimary mb-4 inline-block"
       >
         اضافه وحده
       </Link>
       <table className="w-full bg-white dark:bg-gray-800 shadow-md rounded border border-gray-200 dark:border-gray-700">
         <thead className="bg-gray-100 dark:bg-gray-700">
           <tr>
-            <th className="p-4 text-gray-800 dark:text-gray-300">مسلسل</th>
+            <th className="p-4 text-gray-800 dark:text-gray-300">الرقم التسلسلي</th>
             <th className="p-4 text-gray-800 dark:text-gray-300">ألاسم</th>
             <th className="p-4 text-gray-800 dark:text-gray-300">الوصف</th>
             <th className="p-4 text-gray-800 dark:text-gray-300">الاوامر</th>

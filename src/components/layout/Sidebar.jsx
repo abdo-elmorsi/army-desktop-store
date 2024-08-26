@@ -2,6 +2,10 @@ import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useLocalStorageUser } from '@/hooks';
 import { Button } from '@/components';
+import { AiOutlineProduct } from 'react-icons/ai';
+import { MdOutlineBalance, MdOutlineStorefront } from 'react-icons/md';
+import { FaArrowRight, FaHome } from 'react-icons/fa';
+// import { FaArrowRightFromBracket } from 'react-icons/fa6';
 
 const Sidebar = () => {
   const navigate = useNavigate();
@@ -15,10 +19,30 @@ const Sidebar = () => {
 
   // Define links with paths and labels
   const links = [
-    { to: '/', label: 'القائمه الرئيسيه' },
-    { to: '/products', label: 'المنتجات' },
-    { to: '/stores', label: 'المخازن' },
-    { to: '/units', label: 'وحدات القياس' },
+    {
+      to: '/',
+      label: 'القائمه الرئيسيه',
+      icon: (isActive) =>  <FaHome size={22} className={isActive ? "text-white":"text-primary hover:text-white"} />
+
+    },
+    {
+      to: '/products',
+      label: 'المنتجات',
+      icon: (isActive) =>  <AiOutlineProduct size={22} className={isActive ? "text-white":"text-primary hover:text-white"} />
+
+    },
+    {
+      to: '/stores',
+      label: 'المخازن',
+      icon: (isActive) =>  <MdOutlineStorefront size={22} className={isActive ? "text-white":"text-primary hover:text-white"} />
+
+    },
+    {
+      to: '/units',
+      label: 'وحدات القياس',
+      icon: (isActive) =>  <MdOutlineBalance size={22} className={isActive ? "text-white":"text-primary hover:text-white"} />
+
+    },
     // Add more links here as needed
   ];
 
@@ -40,7 +64,10 @@ const Sidebar = () => {
                   : 'text-gray-700 dark:text-gray-300 hover:bg-primary hover:text-white'
                   }`}
               >
-                {link.label}
+                <div className='flex justify-start gap-2'>
+                  <span>{link.icon(isActive(link.to))}</span>
+                  <span className='flex-1'>{link.label}</span>
+                </div>
               </Link>
             </li>
           ))}
@@ -53,9 +80,11 @@ const Sidebar = () => {
           <div>
             <Button
               onClick={logout}
-              className="btn--secondary bg-red-500 border-none dark:bg-red-600 text-white w-full hover:bg-red-600 dark:hover:bg-red-700"
+              className="btn--red flex items-center justify-center gap-4 w-full"
             >
-              Logout
+              <FaArrowRight size={22} />
+              <span>تسجيل الخروج</span>
+
             </Button>
           </div>
         )}

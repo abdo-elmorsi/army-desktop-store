@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
 import { Input, Button } from '@/components';
 import { useInput, useIndexedDB } from '@/hooks';
@@ -48,7 +48,7 @@ const SignUp = () => {
             label={"الباسورد"}
             name="password"
             type={showPass ? "text" : "password"}
-            prepend={showPass ? <EyeIcon onClick={handleShowPass} className="cursor-pointer text-primary" width={"25"} /> : <EyeSlashIcon onClick={handleShowPass} className="cursor-pointer text-primary" width={"25"} />}
+            prepend={showPass ? <FaEye onClick={handleShowPass} className="cursor-pointer text-primary" size={22} /> : <FaEyeSlash onClick={handleShowPass} className="cursor-pointer text-primary" size={22} />}
             {...password.bind}
           />
           <Button

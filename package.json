@@ -1,8 +1,8 @@
 {
-  "name": "electron-store",
+  "name": "desktop-store",
   "version": "2.2.0",
   "main": "dist-electron/main/index.js",
-  "description": "Electron Store.",
+  "description": "Desktop Store.",
   "author": "Abdo Elmorsi (Elsohagi)",
   "license": "MIT",
   "private": true,
@@ -19,23 +19,21 @@
     "rebuild": "electron-rebuild -f -w better-sqlite3"
   },
   "dependencies": {
-    "@heroicons/react": "^2.1.5",
     "dexie": "^4.0.8",
     "electron-updater": "^6.1.8",
-    "react-router-dom": "^6.26.1"
+    "react-icons": "^5.3.0",
+    "react-router-dom": "^6.26.1",
+    "react-select": "^5.8.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.42.1",
-    "@types/better-sqlite3": "^7.6.11",
     "@types/react": "^18.2.64",
     "@types/react-dom": "^18.2.21",
     "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.4.18",
-    "better-sqlite3": "^11.2.1",
     "classnames": "^2.5.1",
     "electron": "^29.1.1",
     "electron-builder": "^24.13.3",
-    "electron-rebuild": "^3.2.9",
     "postcss": "^8.4.35",
     "postcss-import": "^16.0.1",
     "react": "^18.2.0",

@@ -15,7 +15,7 @@ const UnitForm = () => {
 
   useEffect(() => {
     if (id) {
-      const unit = units?.find((units) => units.id === parseInt(id))||null;
+      const unit = units?.find((units) => units.id === parseInt(id)) || null;
       if (unit) {
         name.changeValue(unit.name)
         description.changeValue(unit.description)
@@ -39,7 +39,7 @@ const UnitForm = () => {
   };
 
   return (
-    <div className="p-6 rounded-md bg-gray-50 dark:bg-gray-900 min-h-screen">
+    <div className="p-6 px-8 rounded-md bg-gray-50 dark:bg-gray-900 ">
       <nav className="text-gray-700 dark:text-gray-300 mb-4">
         <ul className="list-reset flex">
           <li>
@@ -57,26 +57,29 @@ const UnitForm = () => {
         {editing ? 'تعديل وحده' : 'اضافه وحده'}
       </h1>
       <form>
-        <div className="mb-4">
-          <Input
-            label={"اسم الوحده"}
-            {...name.bind}
-            name="name"
-          />
+        <div className='flex justify-start items-start flex-wrap gap-6 flex-col'>
+
+          <div className="mb-4 w-5/12">
+            <Input
+              mandatory
+              label={"اسم الوحده"}
+              {...name.bind}
+              name="name"
+            />
 
 
+          </div>
+          <div className="mb-4 w-5/12">
+            <Input
+              label={"تفاصيل"}
+              {...description.bind}
+              name="description"
+            />
+
+
+          </div>
         </div>
-        <div className="mb-4">
-          <Input
-            label={"تفاصيل"}
-            {...description.bind}
-            name="description"
-          />
-
-
-        </div>
-
-        <Button onClick={handleSubmit}>
+        <Button disabled={!name.value} onClick={handleSubmit}>
           {editing ? 'تعديل' : 'اضافه'}
         </Button>
       </form>
