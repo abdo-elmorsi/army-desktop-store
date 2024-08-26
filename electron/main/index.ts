@@ -1,8 +1,7 @@
-import { app, BrowserWindow, shell, ipcMain } from "electron";
+import { app, BrowserWindow, shell, ipcMain, Menu } from "electron";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import os from "node:os";
-
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -40,15 +39,13 @@ if (!app.requestSingleInstanceLock()) {
 let win: BrowserWindow | null = null;
 const preload = path.join(__dirname, "../preload/index.mjs");
 const indexHtml = path.join(RENDERER_DIST, "index.html");
-
-
+const isProduction = true;
 
 async function createWindow() {
     win = new BrowserWindow({
         title: "Main window",
         icon: path.join(process.env.VITE_PUBLIC, "favicon.ico"),
         fullscreen: false,
-        closable:true,
         frame: true,
 
         webPreferences: {
@@ -84,11 +81,46 @@ async function createWindow() {
         if (url.startsWith("https:")) shell.openExternal(url);
         return { action: "deny" };
     });
-
-
 }
 
-app.whenReady().then(createWindow);
+function createMenu() {
+    // Check if the environment is production
+    if (!isProduction) {
+        const menu = Menu.buildFromTemplate([
+            {
+                label: "Edit",
+                submenu: [
+                    { role: "undo" },
+                    { role: "redo" },
+                    { type: "separator" },
+                    { role: "cut" },
+                    { role: "copy" },
+                    { role: "paste" },
+                    { role: "selectAll" },
+                ],
+            },
+            {
+                label: "View",
+                submenu: [
+                    { role: "reload" },
+                    { role: "toggleDevTools" },
+                    { type: "separator" },
+                    { role: "resetZoom" },
+                    { role: "zoomIn" },
+                    { role: "zoomOut" },
+                ],
+            },
+        ]);
+        Menu.setApplicationMenu(menu);
+    } else {
+        Menu.setApplicationMenu(null); // Hide the menu in production
+    }
+}
+
+app.whenReady().then(() => {
+    createWindow();
+    createMenu();
+});
 
 app.on("window-all-closed", () => {
     win = null;
