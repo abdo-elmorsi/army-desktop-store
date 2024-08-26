@@ -85,7 +85,7 @@ async function createWindow() {
 
 function createMenu() {
     // Check if the environment is production
-    if (!isProduction) {
+    if (isProduction) {
         const menu = Menu.buildFromTemplate([
             {
                 label: "Edit",

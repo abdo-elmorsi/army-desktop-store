@@ -40,7 +40,7 @@ const Products = () => {
       <ul className='flex gap-4 justify-start items-center mb-3'>
 
         {stores.map((store) => {
-          return <li className=''>
+          return <li key={store.id} className=''>
             <Button onClick={() => {
               if (selectedStore !== store.id) {
                 setSelectedStore(store?.id)

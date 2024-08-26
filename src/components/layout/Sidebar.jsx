@@ -3,8 +3,9 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useLocalStorageUser } from '@/hooks';
 import { Button } from '@/components';
 import { AiOutlineProduct } from 'react-icons/ai';
-import { MdOutlineBalance, MdOutlineStorefront } from 'react-icons/md';
+import { MdOutlineBalance, MdOutlineStorefront, MdSettings } from 'react-icons/md';
 import { FaArrowRight, FaHome } from 'react-icons/fa';
+import { FcSettings } from 'react-icons/fc';
 // import { FaArrowRightFromBracket } from 'react-icons/fa6';
 
 const Sidebar = () => {
@@ -41,6 +42,12 @@ const Sidebar = () => {
       to: '/units',
       label: 'وحدات القياس',
       icon: (isActive) =>  <MdOutlineBalance size={22} className={isActive ? "text-white":"text-primary hover:text-white"} />
+
+    },
+    {
+      to: '/settings',
+      label: 'الاعدادات',
+      icon: (isActive) =>  <MdSettings size={22} className={isActive ? "text-white":"text-primary hover:text-white"} />
 
     },
     // Add more links here as needed
