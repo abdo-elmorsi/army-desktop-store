@@ -43,6 +43,7 @@ const Input = ({
           type={type}
           className={` 
           rounded-md
+          font-bold text-lg
           w-full px-3 py-3 
           placeholder-gray-400 text-gray-700 border
           dark:bg-gray-800

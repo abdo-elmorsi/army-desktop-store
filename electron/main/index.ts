@@ -43,7 +43,7 @@ const isProduction = true;
 
 async function createWindow() {
     win = new BrowserWindow({
-        title: "Main window",
+        title: "ادارة المخازن",
         icon: path.join(process.env.VITE_PUBLIC, "favicon.ico"),
         fullscreen: false,
         frame: true,

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useSavedState, useIndexedDB } from '@/hooks';
 import { Button } from '@/components';
-import { formatComma, getLabel } from '@/utils';
+import { formatComma, getLabel, getDateDifference } from '@/utils';
 import { Link } from 'react-router-dom';
 import { FaEye } from 'react-icons/fa';
 import { BiArrowFromRight } from 'react-icons/bi';
@@ -47,10 +47,10 @@ const Home = ({ view = false }) => {
   }, [products, selectedStore])
 
   return (
-    <div className="p-4 bg-gray-50 dark:bg-gray-900 min-h-screen">
+    <div className="p-4 bg-gray-50 dark:bg-gray-900">
       <div className='flex justify-between items-center'>
 
-        <h1 className="text-2xl mb-4 text-gray-800 dark:text-white">
+        <h1 className="text-2xl font-extrabold mb-4 text-gray-800 dark:text-white">
           {view ? "المخازن" : "القائمة الرئيسيه"}
 
         </h1>
@@ -81,27 +81,31 @@ const Home = ({ view = false }) => {
       </ul>
 
       <table className="w-full bg-white dark:bg-gray-800 shadow-md rounded border border-gray-200 dark:border-gray-700">
-        <thead className="bg-gray-100 dark:bg-gray-700">
+        <thead className="bg-gray-300 dark:bg-gray-800">
           <tr>
-            <th className="max-w-16 p-4 font-extrabold text-gray-950 dark:text-gray-50">الرقم التسلسلي</th>
-            <th className="p-4 font-extrabold text-gray-950 dark:text-gray-50">اسم الصنف</th>
-            <th className="p-4 font-extrabold text-gray-950 dark:text-gray-50">الرصيد</th>
-            <th className="p-4 font-extrabold text-gray-950 dark:text-gray-50">المخزن</th>
-            <th className="p-4 font-extrabold text-gray-950 dark:text-gray-50">تاريخ الانتاج</th>
-            <th className="p-4 font-extrabold text-gray-950 dark:text-gray-50">تاريخ الانتهاء</th>
-            <th className="p-4 font-extrabold text-gray-950 dark:text-gray-50">الوصف</th>
+            <th className="max-w-10 p-4 text-gray-950 dark:text-gray-50">الرقم التسلسلي</th>
+            <th className="p-4  text-gray-950 dark:text-gray-50">اسم الصنف</th>
+            <th className="p-4  text-gray-950 dark:text-gray-50">الرصيد</th>
+            <th className="p-4  text-gray-950 dark:text-gray-50">المخزن</th>
+            <th className="p-4  text-gray-950 dark:text-gray-50">تاريخ الانتاج</th>
+            <th className="p-4  text-gray-950 dark:text-gray-50">تاريخ الانتهاء</th>
+            <th className="p-4  text-gray-950 dark:text-gray-50">الصلاحيه</th>
+            <th className="p-4  text-gray-950 dark:text-gray-50">الوصف</th>
           </tr>
         </thead>
         <tbody>
+
           {filteredProducts.map((store, i) => (
-            <tr key={store.id} className="border-t border-gray-200 dark:border-gray-700">
-              <td className=" text-center p-4 text-gray-800 dark:text-gray-200">{i + 1}</td>
-              <td className=" text-center p-4 text-gray-950 dark:text-gray-50">{store.name}</td>
-              <td className=" text-center p-4 text-gray-950 dark:text-gray-50">{formatComma(store.qty)} ({getLabel(store.unitId, units)})</td>
-              <td className=" text-center p-4 text-gray-800 dark:text-gray-200">{getLabel(store.storeId, stores)}</td>
-              <td className=" text-center p-4 text-gray-800 dark:text-gray-200">{store.createdDate}</td>
-              <td className=" text-center p-4 text-gray-800 dark:text-gray-200">{store.expiryDate}</td>
-              <td className=" text-center p-4 text-gray-800 dark:text-gray-200">{store.description}</td>
+            <tr key={store.id} className={`border-t ${i % 2 === 0 ? 'bg-gray-100 dark:bg-gray-700' : 'bg-white dark:bg-gray-800'
+              }`} >
+              <td className="text-center p-4 text-gray-800 dark:text-gray-200">{i + 1}</td>
+              <td className=" font-bold text-center p-4 text-gray-950 dark:text-gray-50">{store.name}</td>
+              <td className="text-center p-4 text-gray-950 dark:text-gray-50">{formatComma(store.qty)} ({getLabel(store.unitId, units)})</td>
+              <td className="text-center p-4 text-gray-800 dark:text-gray-200">{getLabel(store.storeId, stores)}</td>
+              <td className="text-center p-4 text-gray-800 dark:text-gray-200">{store.createdDate}</td>
+              <td className="text-center p-4 text-gray-800 dark:text-gray-200">{store.expiryDate}</td>
+              <td className="text-center p-4 text-gray-800 dark:text-gray-200">{getDateDifference(store.createdDate, store.expiryDate)}</td>
+              <td className="text-center p-4 text-gray-800 dark:text-gray-200">{store.description}</td>
 
             </tr>
           ))}

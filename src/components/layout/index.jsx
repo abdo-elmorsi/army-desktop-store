@@ -33,7 +33,7 @@ const Layout = ({ children }) => {
 			<div>
 				<Header />
 			</div>
-			<div className="flex-1 flex flex-row">
+			<div className="flex-1 flex flex-row dark:bg-gray-900">
 				<Sidebar />
 				<main className="flex-1 p-6 bg-white dark:bg-gray-800">
 					{children}

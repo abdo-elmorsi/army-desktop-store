@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { HashRouter as Router, Route, Routes } from 'react-router-dom';
 import { Home, Products, Stores, Units, Settings, SignUp, Login, NotFound } from '@/pages';
 import { Layout } from '@/components';
@@ -7,6 +7,11 @@ import StoreForm from '@/pages/stores/add-update';
 import UnitForm from './pages/units/add-update';
 
 function App() {
+
+  useEffect(() => {
+    const savedDarkMode = localStorage.getItem('darkMode') === 'true';
+    document.documentElement.classList.toggle('dark', savedDarkMode);
+  }, []);
   return (
     <Router>
       <Routes>

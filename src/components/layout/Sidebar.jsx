@@ -59,7 +59,7 @@ const Sidebar = () => {
   };
 
   return (
-    <aside className="w-64 bg-gray-100 dark:bg-gray-900 shadow-lg h-full flex flex-col">
+    <aside className="w-64 bg-gray-100 dark:bg-gray-900 shadow-lg flex flex-col sidebar">
       <div className="p-4 flex-1">
         <ul className="space-y-2">
           {links.map((link) => (

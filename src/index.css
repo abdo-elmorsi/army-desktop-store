@@ -2,55 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
-@font-face {
-    font-family: "Cairo";
-    src: url("src/assets/fonts/Cairo-Regular.ttf") format("truetype");
-    font-weight: 400;
-    font-style: normal;
-}
 
-@font-face {
-    font-family: "Cairo";
-    src: url("src/assets/fonts/Cairo-Black.ttf") format("truetype");
-    font-weight: 700;
-    font-style: normal;
-}
-@font-face {
-    font-family: "Cairo";
-    src: url("src/assets/fonts/Cairo-Bold.ttf") format("truetype");
-    font-weight: 700;
-    font-style: normal;
-}
-@font-face {
-    font-family: "Cairo";
-    src: url("src/assets/fonts/Cairo-ExtraBold.ttf") format("truetype");
-    font-weight: 700;
-    font-style: normal;
-}
-@font-face {
-    font-family: "Cairo";
-    src: url("src/assets/fonts/Cairo-Medium.ttf") format("truetype");
-    font-weight: 700;
-    font-style: normal;
-}
-@font-face {
-    font-family: "Cairo";
-    src: url("src/assets/fonts/Cairo-Light.ttf") format("truetype");
-    font-weight: 700;
-    font-style: normal;
-}
 
 :root {
-    font-family: "Cairo", Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+    font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
     line-height: 1.5;
-    font-weight: 400;
+    font-weight: 500;
     direction: rtl;
-
-    font-synthesis: none;
-    text-rendering: optimizeLegibility;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    -webkit-text-size-adjust: 100%;
 }
 body {
     margin: 0;
@@ -76,4 +34,7 @@ ul {
     .btn--red {
         @apply bg-red-500 text-white;
     }
+}
+.sidebar {
+    height: calc(100vh - 88px);
 }

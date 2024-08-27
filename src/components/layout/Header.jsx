@@ -10,7 +10,6 @@ const Header = () => {
 	useEffect(() => {
 		const savedDarkMode = localStorage.getItem('darkMode') === 'true';
 		setDarkMode(savedDarkMode);
-		document.documentElement.classList.toggle('dark', savedDarkMode);
 	}, []);
 
 
