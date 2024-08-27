@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useLocalStorageUser } from '@/hooks';
 import Sidebar from './Sidebar';
 import Header from './Header';
+import CopyrightFooter from '../CopyrightFooter';
 
 const Layout = ({ children }) => {
 	const navigate = useNavigate();
@@ -39,6 +40,7 @@ const Layout = ({ children }) => {
 					{children}
 				</main>
 			</div>
+			<CopyrightFooter />
 		</div>
 	);
 };
