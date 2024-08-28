@@ -13,7 +13,7 @@ const ProductsForm = () => {
 
   const name = useInput("", null);
   const storeId = useSelect("", null);
-  const qty = useInput("", null);
+  const qty = useInput("", "number", true);
   const unitId = useSelect("", null);
   const createdDate = useInput("", null);
   const expiryDate = useInput("", null);

@@ -5,14 +5,14 @@ import { formatComma, getLabel, getDateDifference } from '@/utils';
 import { Link } from 'react-router-dom';
 import { FaEye } from 'react-icons/fa';
 import { BiArrowFromRight } from 'react-icons/bi';
+import { CSSTransition, TransitionGroup } from 'react-transition-group';
 
 const Home = ({ view = false }) => {
   const { data: stores } = useIndexedDB('stores');
   const [selectedStore, setSelectedStore] = useState(null);
   const { data: products } = useIndexedDB('products');
   const { data: units } = useIndexedDB('units');
-  const [timer, setTimer] = useSavedState(5, "timer")
-
+  const [timer, setTimer] = useSavedState(5, "timer");
 
   // Function to swipe through stores
   const swipeStores = () => {
@@ -27,29 +27,22 @@ const Home = ({ view = false }) => {
 
   useEffect(() => {
     if (stores?.length) {
-      // Set the first store as the selected store by default
       setSelectedStore(stores[0].id);
-
-      // Start the interval to navigate between stores every 5 seconds
       const intervalId = setInterval(swipeStores, (timer || 5) * 1000);
-
       return () => clearInterval(intervalId);
     }
-  }, [stores]);
+  }, [stores, timer]);
 
   const filteredProducts = useMemo(() => {
     if (selectedStore) {
-      return products?.filter(product => product.storeId == selectedStore)
-
-    } else {
-      return products
+      return products?.filter(product => product.storeId == selectedStore);
     }
-  }, [products, selectedStore])
+    return products;
+  }, [products, selectedStore]);
 
   return (
     <div className="p-4 bg-gray-50 dark:bg-gray-900">
       <div className='flex justify-between items-center'>
-
         <div>
           <h1 className="m-0 text-2xl font-extrabold text-primary dark:text-white">
             {view ? "مديرية أمن كفر الشيخ" : "القائمة الرئيسيه"}
@@ -59,17 +52,21 @@ const Home = ({ view = false }) => {
             <p className='text-sm m-3 font-bold text-gray-800 dark:text-white'>وحدة التعينات</p>
           </>}
         </div>
-        {!view ? <Link to={"/view"}>
-          <Button className="btn--primary flex items-center gap-4">
-            <span>العرض</span>
-            <FaEye className="cursor-pointer text-white" size={22} />
-          </Button>
-        </Link> : <Link to={"/"}>
-          <Button className="btn--primary flex items-center gap-4">
-            <span>الاعدادات</span>
-            <BiArrowFromRight className="cursor-pointer text-white" size={22} />
-          </Button>
-        </Link>}
+        {!view ? (
+          <Link to={"/view"}>
+            <Button className="btn--primary flex items-center gap-4">
+              <span>العرض</span>
+              <FaEye className="cursor-pointer text-white" size={22} />
+            </Button>
+          </Link>
+        ) : (
+          <Link to={"/"}>
+            <Button className="btn--primary flex items-center gap-4">
+              <span>الاعدادات</span>
+              <BiArrowFromRight className="cursor-pointer text-white" size={22} />
+            </Button>
+          </Link>
+        )}
       </div>
 
       <ul className="flex gap-4 justify-start items-center mb-3">
@@ -89,32 +86,33 @@ const Home = ({ view = false }) => {
         <thead className="bg-gray-300 dark:bg-gray-800">
           <tr>
             <th className="max-w-10 p-4 text-gray-950 dark:text-gray-50">الرقم التسلسلي</th>
-            <th className="p-4  text-gray-950 dark:text-gray-50">اسم الصنف</th>
-            <th className="p-4  text-gray-950 dark:text-gray-50">الرصيد</th>
-            <th className="p-4  text-gray-950 dark:text-gray-50">المخزن</th>
-            <th className="p-4  text-gray-950 dark:text-gray-50">تاريخ الانتاج</th>
-            <th className="p-4  text-gray-950 dark:text-gray-50">تاريخ الانتهاء</th>
-            <th className="p-4  text-gray-950 dark:text-gray-50">الصلاحيه</th>
-            <th className="p-4  text-gray-950 dark:text-gray-50">الوصف</th>
+            <th className="p-4 text-gray-950 dark:text-gray-50">اسم الصنف</th>
+            <th className="p-4 text-gray-950 dark:text-gray-50">الرصيد</th>
+            <th className="p-4 text-gray-950 dark:text-gray-50">المخزن</th>
+            <th className="p-4 text-gray-950 dark:text-gray-50">تاريخ الانتاج</th>
+            <th className="p-4 text-gray-950 dark:text-gray-50">تاريخ الانتهاء</th>
+            <th className="p-4 text-gray-950 dark:text-gray-50">الصلاحيه</th>
+            <th className="p-4 text-gray-950 dark:text-gray-50">الوصف</th>
           </tr>
         </thead>
-        <tbody>
-
+        <TransitionGroup component="tbody">
           {filteredProducts.map((store, i) => (
-            <tr key={store.id} className={`border-t ${i % 2 === 0 ? 'bg-gray-100 dark:bg-gray-700' : 'bg-white dark:bg-gray-800'
-              }`} >
-              <td className="text-center p-4 text-gray-800 dark:text-gray-200">{i + 1}</td>
-              <td className=" font-bold text-center p-4 text-gray-950 dark:text-gray-50">{store.name}</td>
-              <td className="text-center p-4 text-gray-950 dark:text-gray-50">{formatComma(store.qty)} ({getLabel(store.unitId, units)})</td>
-              <td className="text-center p-4 text-gray-800 dark:text-gray-200">{getLabel(store.storeId, stores)}</td>
-              <td className="text-center p-4 text-gray-800 dark:text-gray-200">{store.createdDate}</td>
-              <td className="text-center p-4 text-gray-800 dark:text-gray-200">{store.expiryDate}</td>
-              <td className="text-center p-4 text-gray-800 dark:text-gray-200">{getDateDifference(store.createdDate, store.expiryDate)}</td>
-              <td className="text-center p-4 text-gray-800 dark:text-gray-200">{store.description}</td>
-
-            </tr>
+            <CSSTransition key={store.id} timeout={(i + 1) * 100} classNames="slide">
+              <tr className={`border-t ${i % 2 === 0 ? 'bg-gray-100 dark:bg-gray-700' : 'bg-white dark:bg-gray-800'}`}>
+                <td className="text-center p-4 text-gray-800 dark:text-gray-200">{i + 1}</td>
+                <td className="font-bold text-center p-4 text-gray-950 dark:text-gray-50">{store.name}</td>
+                <td className="text-center p-4 text-gray-950 dark:text-gray-50">
+                  {formatComma(store.qty)} ({getLabel(store.unitId, units)})
+                </td>
+                <td className="text-center p-4 text-gray-800 dark:text-gray-200">{getLabel(store.storeId, stores)}</td>
+                <td className="text-center p-4 text-gray-800 dark:text-gray-200">{store.createdDate}</td>
+                <td className="text-center p-4 text-gray-800 dark:text-gray-200">{store.expiryDate}</td>
+                <td className="text-center p-4 text-gray-800 dark:text-gray-200">{getDateDifference(store.createdDate, store.expiryDate)}</td>
+                <td className="text-center p-4 text-gray-800 dark:text-gray-200">{store.description}</td>
+              </tr>
+            </CSSTransition>
           ))}
-        </tbody>
+        </TransitionGroup>
       </table>
     </div>
   );

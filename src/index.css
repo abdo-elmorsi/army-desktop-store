@@ -2,8 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-
-
 :root {
     font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
     line-height: 1.5;
@@ -37,4 +35,46 @@ ul {
 }
 .sidebar {
     height: calc(100vh - 88px);
+}
+
+/* animation */
+.slide-enter {
+    transform: translateX(-500px);
+    opacity: 0;
+    -webkit-transform: translateX(-500px);
+    -moz-transform: translateX(-500px);
+    -ms-transform: translateX(-500px);
+    -o-transform: translateX(-500px);
+}
+.slide-enter-active {
+    transform: translateX(0);
+    opacity: 1;
+    transition: transform 500ms ease-in-out, opacity 500ms ease-in-out;
+    -webkit-transition: transform 500ms ease-in-out, opacity 500ms ease-in-out;
+    -moz-transition: transform 500ms ease-in-out, opacity 500ms ease-in-out;
+    -ms-transition: transform 500ms ease-in-out, opacity 500ms ease-in-out;
+    -o-transition: transform 500ms ease-in-out, opacity 500ms ease-in-out;
+    -webkit-transform: translateX(0);
+    -moz-transform: translateX(0);
+    -ms-transform: translateX(0);
+    -o-transform: translateX(0);
+}
+.slide-exit {
+    transform: translateX(0);
+    opacity: 1;
+    display: none;
+    -webkit-transform: translateX(0);
+    -moz-transform: translateX(0);
+    -ms-transform: translateX(0);
+    -o-transform: translateX(0);
+}
+.slide-exit-active {
+    transform: translateX(-500px);
+    opacity: 0;
+    display: none;
+    transition: transform 500ms ease-out, opacity 500ms ease-out;
+    -webkit-transform: translateX(-500px);
+    -moz-transform: translateX(-500px);
+    -ms-transform: translateX(-500px);
+    -o-transform: translateX(-500px);
 }
