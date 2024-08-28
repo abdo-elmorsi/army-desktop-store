@@ -50,10 +50,15 @@ const Home = ({ view = false }) => {
     <div className="p-4 bg-gray-50 dark:bg-gray-900">
       <div className='flex justify-between items-center'>
 
-        <h1 className="text-2xl font-extrabold mb-4 text-gray-800 dark:text-white">
-          {view ? "المخازن" : "القائمة الرئيسيه"}
-
-        </h1>
+        <div>
+          <h1 className="m-0 text-2xl font-extrabold text-primary dark:text-white">
+            {view ? "مديرية أمن كفر الشيخ" : "القائمة الرئيسيه"}
+          </h1>
+          {view && <>
+            <p className='text-md m-2 font-bold text-gray-800 dark:text-white'>أدارة قوات ألامن</p>
+            <p className='text-sm m-3 font-bold text-gray-800 dark:text-white'>وحدة التعينات</p>
+          </>}
+        </div>
         {!view ? <Link to={"/view"}>
           <Button className="btn--primary flex items-center gap-4">
             <span>العرض</span>
