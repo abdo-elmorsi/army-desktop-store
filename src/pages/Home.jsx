@@ -6,6 +6,8 @@ import { Link } from 'react-router-dom';
 import { FaEye } from 'react-icons/fa';
 import { BiArrowFromRight } from 'react-icons/bi';
 import { CSSTransition, TransitionGroup } from 'react-transition-group';
+// Import necessary date functions from date-fns
+import { differenceInDays, parseISO } from 'date-fns';
 
 const Home = ({ view = false }) => {
   const { data: stores } = useIndexedDB('stores');
@@ -13,6 +15,12 @@ const Home = ({ view = false }) => {
   const { data: products } = useIndexedDB('products');
   const { data: units } = useIndexedDB('units');
   const [timer, setTimer] = useSavedState(5, "timer");
+
+  // Custom function to check if the expiry date is less than a month away
+  const isExpiringSoon = (expiryDate) => {
+    const daysUntilExpiry = differenceInDays(parseISO(expiryDate), new Date());
+    return daysUntilExpiry < 30;
+  };
 
   // Function to swipe through stores
   const swipeStores = () => {
@@ -96,22 +104,26 @@ const Home = ({ view = false }) => {
           </tr>
         </thead>
         <TransitionGroup component="tbody">
-          {filteredProducts.map((store, i) => (
-            <CSSTransition key={store.id} timeout={(i + 1) * 100} classNames="slide">
-              <tr className={`border-t ${i % 2 === 0 ? 'bg-gray-100 dark:bg-gray-700' : 'bg-white dark:bg-gray-800'}`}>
-                <td className="text-center p-4 text-gray-800 dark:text-gray-200">{i + 1}</td>
-                <td className="font-bold text-center p-4 text-gray-950 dark:text-gray-50">{store.name}</td>
-                <td className="text-center p-4 text-gray-950 dark:text-gray-50">
-                  {formatComma(store.qty)} ({getLabel(store.unitId, units)})
-                </td>
-                <td className="text-center p-4 text-gray-800 dark:text-gray-200">{getLabel(store.storeId, stores)}</td>
-                <td className="text-center p-4 text-gray-800 dark:text-gray-200">{store.createdDate}</td>
-                <td className="text-center p-4 text-gray-800 dark:text-gray-200">{store.expiryDate}</td>
-                <td className="text-center p-4 text-gray-800 dark:text-gray-200">{getDateDifference(store.createdDate, store.expiryDate)}</td>
-                <td className="text-center p-4 text-gray-800 dark:text-gray-200">{store.description}</td>
-              </tr>
-            </CSSTransition>
-          ))}
+          {filteredProducts.map((store, i) => {
+            return (
+              <CSSTransition key={store.id} timeout={(i + 1) * 100} classNames="slide">
+                <tr className={`border-t ${i % 2 === 0 ? 'bg-gray-100 dark:bg-gray-700' : 'bg-white dark:bg-gray-800'}`}>
+                  <td className="text-center p-4 text-gray-800 dark:text-gray-200">{i + 1}</td>
+                  <td className="font-bold text-center p-4 text-gray-950 dark:text-gray-50">{store.name}</td>
+                  <td className="text-center p-4 text-gray-950 dark:text-gray-50">
+                    {formatComma(store.qty)} ({getLabel(store.unitId, units)})
+                  </td>
+                  <td className="text-center p-4 text-gray-800 dark:text-gray-200">{getLabel(store.storeId, stores)}</td>
+                  <td className="text-center p-4 text-gray-800 dark:text-gray-200">{store.createdDate}</td>
+                  <td className={`text-center p-4 ${isExpiringSoon(store.expiryDate) ? 'text-red-600' : 'text-gray-800 dark:text-gray-200'}`}>
+                    {store.expiryDate}
+                  </td>
+                  <td className="text-center p-4 text-gray-800 dark:text-gray-200">{getDateDifference(store.createdDate, store.expiryDate)}</td>
+                  <td className="text-center p-4 text-gray-800 dark:text-gray-200">{store.description}</td>
+                </tr>
+              </CSSTransition>
+            )
+          })}
         </TransitionGroup>
       </table>
     </div>
