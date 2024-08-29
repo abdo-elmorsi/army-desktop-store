@@ -6,11 +6,11 @@ import { Select, Button, Input } from '@/components';
 const ProductsForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { data: products, addItem, updateItem } = useIndexedDB('products');
+
+  const { data: products, addItem, loading, updateItem } = useIndexedDB('products');
   const { data: stores } = useIndexedDB('stores');
   const { data: units } = useIndexedDB('units');
   const [editing, setEditing] = useState(false);
-
   const name = useInput("", null);
   const storeId = useSelect("", null);
   const qty = useInput("", "number", true);
@@ -22,7 +22,7 @@ const ProductsForm = () => {
 
 
   useEffect(() => {
-    if (id) {
+    if (id && products?.length && stores?.length && units?.length) {
       const product = products?.find((products) => products.id === parseInt(id)) || null;
       if (product) {
         name.changeValue(product.name)
@@ -35,7 +35,7 @@ const ProductsForm = () => {
         setEditing(true);
       }
     }
-  }, [id, products]);
+  }, [id, products, stores, units]);
 
 
 
@@ -76,7 +76,7 @@ const ProductsForm = () => {
       <h1 className="text-2xl mb-4 text-gray-800 dark:text-white">
         {editing ? 'تعديل منتج' : 'اضافه منتج'}
       </h1>
-      <form>
+      {loading ? <h3 className='text-center'>تحميل...</h3> : <form>
         <div className='flex justify-between items-center flex-wrap gap-6'>
           <div className="mb-4 w-5/12">
             <Input
@@ -150,7 +150,7 @@ const ProductsForm = () => {
         <Button disabled={!name.value || !storeId.value?.id || !+qty.value || !unitId.value?.id || !createdDate.value || !expiryDate.value} onClick={handleSubmit}>
           {editing ? 'تعديل' : 'اضافه'}
         </Button>
-      </form>
+      </form>}
     </div>
   );
 };
