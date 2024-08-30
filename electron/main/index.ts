@@ -1,4 +1,4 @@
-import { app, BrowserWindow, shell, ipcMain, Menu } from "electron";
+import { app, BrowserWindow, shell, ipcMain, Menu, dialog } from "electron";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import os from "node:os";
@@ -39,7 +39,7 @@ if (!app.requestSingleInstanceLock()) {
 let win: BrowserWindow | null = null;
 const preload = path.join(__dirname, "../preload/index.mjs");
 const indexHtml = path.join(RENDERER_DIST, "index.html");
-const isProduction = true;
+const isProduction = false;
 
 async function createWindow() {
     win = new BrowserWindow({
@@ -120,6 +120,28 @@ function createMenu() {
 app.whenReady().then(() => {
     createWindow();
     createMenu();
+    ipcMain.handle("show-prompt", async (event, message, defaultValue) => {
+        const { response, checkboxChecked } = await dialog.showMessageBox({
+            type: "question",
+            buttons: ["Cancel", "OK"],
+            defaultId: 1,
+            title: "Prompt",
+            message: message,
+            
+            // input: {
+            //     placeholder: "Enter your value here...",
+            //     value: defaultValue || "",
+            // },
+            checkboxLabel: "Remember my answer", // Optional
+        });
+
+        if (response === 1) {
+            // If 'OK' is clicked
+            return checkboxChecked ? "Remembered Value" : "OK Value"; // Return the input value
+        } else {
+            return null; // 'Cancel' clicked
+        }
+    });
 });
 
 app.on("window-all-closed", () => {

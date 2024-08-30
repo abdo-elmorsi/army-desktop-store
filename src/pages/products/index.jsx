@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useIndexedDB } from '@/hooks';
 import { Button } from '@/components';
 import { formatComma, getLabel } from '@/utils';
+import { differenceInDays, parseISO } from 'date-fns';
 
 const Products = () => {
   const { data: products, deleteItem } = useIndexedDB('products');
@@ -12,8 +13,12 @@ const Products = () => {
 
   const [selectedStore, setSelectedStore] = useState(null);
 
-  const handleDelete = (id) => {
-    deleteItem(id);
+  const handleDelete = async (id) => {
+    const result = await window.ipcRenderer.showPrompt('هل انت متأكد من حذف هذا المنتج:', 'John Doe');
+    if (result) {
+      deleteItem(id);
+      return;
+    }
   };
 
   const handleEdit = (id) => {
@@ -27,6 +32,12 @@ const Products = () => {
       return products
     }
   }, [products, selectedStore])
+
+  // Custom function to check if the expiry date is less than a month away
+  const isExpiringSoon = (expiryDate) => {
+    const daysUntilExpiry = differenceInDays(parseISO(expiryDate), new Date());
+    return daysUntilExpiry < 30;
+  };
 
   return (
     <div className="p-4 bg-gray-50 dark:bg-gray-900">
@@ -77,7 +88,9 @@ const Products = () => {
               <td className=" text-center p-4 text-gray-800 dark:text-gray-200">{formatComma(store.qty)}</td>
               <td className=" text-center p-4 text-gray-800 dark:text-gray-200">{getLabel(store.unitId, units)}</td>
               <td className=" text-center p-4 text-gray-800 dark:text-gray-200">{store.createdDate}</td>
-              <td className=" text-center p-4 text-gray-800 dark:text-gray-200">{store.expiryDate}</td>
+              <td className={`text-center p-4 ${isExpiringSoon(store.expiryDate) ? 'text-red-600' : 'text-gray-800 dark:text-gray-200'}`}>
+                {store.expiryDate}
+              </td>
               <td className=" text-center p-4 text-gray-800 dark:text-gray-200">{store.description}</td>
               <td className="p-4 justify-center  gap-2 flex">
                 <Button

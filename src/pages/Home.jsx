@@ -96,7 +96,7 @@ const Home = ({ view = false }) => {
             <th className="max-w-10 p-4 text-gray-950 dark:text-gray-50">الرقم التسلسلي</th>
             <th className="p-4 text-gray-950 dark:text-gray-50">اسم الصنف</th>
             <th className="p-4 text-gray-950 dark:text-gray-50">الرصيد</th>
-            <th className="p-4 text-gray-950 dark:text-gray-50">المخزن</th>
+            {/* <th className="p-4 text-gray-950 dark:text-gray-50">المخزن</th> */}
             <th className="p-4 text-gray-950 dark:text-gray-50">تاريخ الانتاج</th>
             <th className="p-4 text-gray-950 dark:text-gray-50">تاريخ الانتهاء</th>
             <th className="p-4 text-gray-950 dark:text-gray-50">الصلاحيه</th>
@@ -113,7 +113,7 @@ const Home = ({ view = false }) => {
                   <td className="text-center p-4 text-gray-950 dark:text-gray-50">
                     {formatComma(store.qty)} ({getLabel(store.unitId, units)})
                   </td>
-                  <td className="text-center p-4 text-gray-800 dark:text-gray-200">{getLabel(store.storeId, stores)}</td>
+                  {/* <td className="text-center p-4 text-gray-800 dark:text-gray-200">{getLabel(store.storeId, stores)}</td> */}
                   <td className="text-center p-4 text-gray-800 dark:text-gray-200">{store.createdDate}</td>
                   <td className={`text-center p-4 ${isExpiringSoon(store.expiryDate) ? 'text-red-600' : 'text-gray-800 dark:text-gray-200'}`}>
                     {store.expiryDate}

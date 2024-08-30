@@ -7,8 +7,12 @@ const Units = () => {
   const { data: units, deleteItem } = useIndexedDB('units');
   const navigate = useNavigate();
 
-  const handleDelete = (id) => {
-    deleteItem(id);
+  const handleDelete = async (id) => {
+    const result = await window.ipcRenderer.showPrompt('هل انت متأكد من حذف وحدة القياس:', 'John Doe');
+    if (result) {
+      deleteItem(id);
+      return;
+    }
   };
 
   const handleEdit = (id) => {

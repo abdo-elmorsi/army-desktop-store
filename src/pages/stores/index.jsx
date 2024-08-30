@@ -7,8 +7,12 @@ const Stores = () => {
   const { data: stores, deleteItem } = useIndexedDB('stores');
   const navigate = useNavigate();
 
-  const handleDelete = (id) => {
-    deleteItem(id);
+  const handleDelete = async (id) => {
+    const result = await window.ipcRenderer.showPrompt('هل انت متأكد من حذف هذا المخزن:', 'John Doe');
+    if (result) {
+      deleteItem(id);
+      return;
+    }
   };
 
   const handleEdit = (id) => {

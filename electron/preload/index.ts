@@ -1,20 +1,28 @@
 import { ipcRenderer, contextBridge, type IpcRendererEvent } from "electron";
 
-
-
-
 // Expose ipcRenderer methods to the renderer process
 contextBridge.exposeInMainWorld("ipcRenderer", {
-    on: (channel: string, listener: (event: IpcRendererEvent, ...args: any[]) => void) => ipcRenderer.on(channel, listener),
-    off: (channel: string, listener: (event: IpcRendererEvent, ...args: any[]) => void) => ipcRenderer.off(channel, listener),
-    send: (channel: string, ...args: any[]) => ipcRenderer.send(channel, ...args),
-    invoke: <T>(channel: string, ...args: any[]): Promise<T> => ipcRenderer.invoke(channel, ...args),
+    on: (
+        channel: string,
+        listener: (event: IpcRendererEvent, ...args: any[]) => void
+    ) => ipcRenderer.on(channel, listener),
+    off: (
+        channel: string,
+        listener: (event: IpcRendererEvent, ...args: any[]) => void
+    ) => ipcRenderer.off(channel, listener),
+    send: (channel: string, ...args: any[]) =>
+        ipcRenderer.send(channel, ...args),
+    invoke: <T>(channel: string, ...args: any[]): Promise<T> =>
+        ipcRenderer.invoke(channel, ...args),
 
-    
+    showPrompt: (message: any, defaultValue: any) =>
+        ipcRenderer.invoke("show-prompt", message, defaultValue),
 });
 
 // DOM Ready utility function
-function domReady(condition: DocumentReadyState[] = ["complete", "interactive"]): Promise<boolean> {
+function domReady(
+    condition: DocumentReadyState[] = ["complete", "interactive"]
+): Promise<boolean> {
     return new Promise((resolve) => {
         if (condition.includes(document.readyState)) {
             resolve(true);
