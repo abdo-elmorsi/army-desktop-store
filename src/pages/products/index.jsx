@@ -1,15 +1,16 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useIndexedDB } from '@/hooks';
+import { useIndexedDB, useExportExcel } from '@/hooks';
 import { Button } from '@/components';
 import { formatComma, getLabel } from '@/utils';
 import { differenceInDays, format, parseISO } from 'date-fns';
 import { CgArrowUp } from 'react-icons/cg';
+import { FaDownload, FaPrint } from 'react-icons/fa';
 
 const Products = () => {
   const navigate = useNavigate();
   const [updateHistoryLoading, setUpdateHistoryLoading] = useState(false)
-
+  const tableRef = useRef(null);
   const { data: products, deleteItem } = useIndexedDB('products');
   const { data: productsHistory, addItem, updateItem, deleteItem: deleteItemFromHistory } = useIndexedDB('productsHistory');
   const { data: stores } = useIndexedDB('stores');
@@ -79,14 +80,73 @@ const Products = () => {
 
 
   const filteredProducts = useMemo(() => {
-    return selectedStore ?
+    const new_products = selectedStore ?
       products?.filter(product => product.storeId === selectedStore) :
       products;
+    return new_products.sort((a, b) => a.storeId - b.storeId)
   }, [products, selectedStore]);
 
   const isExpiringSoon = (expiryDate) => {
     return differenceInDays(parseISO(expiryDate), new Date()) < 30;
   };
+
+
+  const columns = useMemo(() => {
+    return [
+      {
+        name: "الرقم التسلسلي",
+        noExport: true,
+        selector: (row, i) => `${i + 1}`
+      },
+      {
+        name: "ألاسم",
+        getValue: (row) => row.name,
+        selector: (row) => row.name
+      },
+      {
+        name: "المخزن",
+        getValue: (row) => getLabel(row.storeId, stores),
+        selector: (row) => getLabel(row.storeId, stores)
+      },
+      {
+        name: "الرصيد",
+        getValue: (row) => parseFloat(row.qty),
+        selector: (row) => formatComma(row.qty)
+      },
+      {
+        name: "وحده القياس",
+        getValue: (row) => getLabel(row.unitId, units),
+        selector: (row) => getLabel(row.unitId, units)
+      },
+      {
+        name: "تاريخ الانتاج",
+        getValue: (row) => row.createdDate,
+        selector: (row) => row.createdDate
+      },
+      {
+        name: "تاريخ الانتهاء",
+        getValue: (row) => row.expiryDate,
+        selector: (row) => row.expiryDate
+      },
+      {
+        name: "الوصف",
+        getValue: (row) => row.description,
+        selector: (row) => row.description
+      },
+    ]
+  }, [stores, units]);
+
+  const exportExcel = async (name = 'المنتجات') => {
+    try {
+      await useExportExcel(filteredProducts, columns, name, (error) => console.log(error))
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  // const handlePrint = () => {
+  //   window.ipcRenderer.print();
+  // };
 
   return (
     <div className="p-4 bg-gray-50 dark:bg-gray-900">
@@ -112,27 +172,37 @@ const Products = () => {
           </li>
         ))}
       </ul>
-      <table className="w-full bg-white dark:bg-gray-800 shadow-md rounded border border-gray-200 dark:border-gray-700">
-        <thead className="bg-gray-100 dark:bg-gray-700">
+      <div className='flex gap-2 items-center justify-end'>
+        <Button onClick={() => exportExcel(`المنتجات-${format(new Date, "yyyy-MM-dd")}`)} className="flex gap-2 items-center">
+          <span>تنزيل اكسيل</span>
+          <FaDownload />
+        </Button>
+        {/* <Button onClick={handlePrint} className="flex gap-2 items-center">
+          <span>طباعه</span>
+          <FaPrint />
+        </Button> */}
+      </div>
+      <table ref={tableRef} className="w-full bg-white dark:bg-gray-800 shadow-md rounded border border-gray-200 dark:border-gray-700">
+        <thead id="printableArea" className="bg-gray-100 dark:bg-gray-700">
           <tr>
-            {["الرقم التسلسلي", "ألاسم", "المخزن", "الرصيد", "وحده القياس", "تاريخ الانتاج", "تاريخ الانتهاء", "الوصف", "الاوامر"].map((header) => (
-              <th key={header} className="p-4 text-gray-800 dark:text-gray-300">{header}</th>
-            ))}
+            {columns.map(columns => {
+              return <th key={columns.name} className="p-4 text-gray-800 dark:text-gray-300">{columns.name}</th>
+            })}
+            <th className="p-4 text-gray-800 dark:text-gray-300">الاوامر</th>
+
           </tr>
         </thead>
         <tbody>
           {filteredProducts.map((product, i) => (
             <tr key={product.id} className="border-t border-gray-200 dark:border-gray-700">
-              <td className="text-center p-4 text-gray-800 dark:text-gray-200">{i + 1}</td>
-              <td className="text-center p-4 text-gray-800 dark:text-gray-200">{product.name}</td>
-              <td className="text-center p-4 text-gray-800 dark:text-gray-200">{getLabel(product.storeId, stores)}</td>
-              <td className="text-center p-4 text-gray-800 dark:text-gray-200">{formatComma(product.qty)}</td>
-              <td className="text-center p-4 text-gray-800 dark:text-gray-200">{getLabel(product.unitId, units)}</td>
-              <td className="text-center p-4 text-gray-800 dark:text-gray-200">{product.createdDate}</td>
-              <td className={`text-center p-4 ${isExpiringSoon(product.expiryDate) ? 'text-red-600' : 'text-gray-800 dark:text-gray-200'}`}>
-                {product.expiryDate}
-              </td>
-              <td className="text-center p-4 text-gray-800 dark:text-gray-200">{product.description}</td>
+              {columns.map(column => {
+                if (column.name === "تاريخ الانتهاء") {
+                  <td className={`text-center p-4 ${isExpiringSoon(column.selector(product, i)) ? 'text-red-600' : 'text-gray-800 dark:text-gray-200'}`}>
+                    {column.selector(product, i)}
+                  </td>
+                }
+                return <th key={column.name} className="p-4 text-gray-800 dark:text-gray-300">{column.selector(product, i)}</th>
+              })}
               <td className="p-4 flex justify-center gap-2">
                 <Button onClick={() => handleEdit(product.id)} className="bg-primary text-white">تعديل</Button>
                 <Button onClick={() => handleDelete(product.id)} className="btn--red">حذف</Button>

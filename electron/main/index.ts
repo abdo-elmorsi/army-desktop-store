@@ -178,3 +178,15 @@ ipcMain.handle("open-win", (_, arg) => {
         childWindow.loadFile(indexHtml, { hash: arg });
     }
 });
+
+// ipcMain.on("print", (event) => {
+//     console.log("Print successful");
+//     const webContents = event.sender;
+//     webContents.print({}, (success) => {
+//         if (success) {
+//             console.log("Print successful");
+//         } else {
+//             console.log("Print failed");
+//         }
+//     });
+// });

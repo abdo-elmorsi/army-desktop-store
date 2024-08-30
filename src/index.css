@@ -98,3 +98,12 @@ ul {
         }
     }
 }
+
+/* @media print {
+    body {
+        visibility: hidden;
+    }
+    #printableArea {
+        visibility: visible;
+    }
+} */
