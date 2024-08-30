@@ -120,19 +120,15 @@ function createMenu() {
 app.whenReady().then(() => {
     createWindow();
     createMenu();
-    ipcMain.handle("show-prompt", async (event, message, defaultValue) => {
+    ipcMain.handle("show-prompt", async (_, message) => {
         const { response, checkboxChecked } = await dialog.showMessageBox({
             type: "question",
             buttons: ["Cancel", "OK"],
             defaultId: 1,
-            title: "Prompt",
+            title: "تحذير",
             message: message,
-            
-            // input: {
-            //     placeholder: "Enter your value here...",
-            //     value: defaultValue || "",
-            // },
-            checkboxLabel: "Remember my answer", // Optional
+
+            // checkboxLabel: "Remember my answer", // Optional
         });
 
         if (response === 1) {
