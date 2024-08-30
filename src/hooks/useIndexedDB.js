@@ -3,9 +3,10 @@ import Dexie from "dexie";
 
 const db = new Dexie("myDatabase");
 db.version(1).stores({
-    users: "++id,username", // Indexing the 'username' field
+    users: "++id,username",
     stores: "++id",
     products: "++id",
+    productsHistory: "++id",
     units: "++id",
 });
 

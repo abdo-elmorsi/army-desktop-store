@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useSelect, useIndexedDB, useInput } from '@/hooks';
-import { Select, Button, Input } from '@/components';
+import { Select, Button, Input, CustomDatePicker } from '@/components';
+import { format } from 'date-fns';
 
 const ProductsForm = () => {
   const { id } = useParams();
@@ -15,8 +16,8 @@ const ProductsForm = () => {
   const storeId = useSelect("", null);
   const qty = useInput("", "number", true);
   const unitId = useSelect("", null);
-  const createdDate = useInput("", null);
-  const expiryDate = useInput("", null);
+  const [createdDate, setCreatedDate] = useState("");
+  const [expiryDate, setExpiryDate] = useState("");
 
   const description = useInput("", null);
 
@@ -29,8 +30,8 @@ const ProductsForm = () => {
         storeId.changeValue(stores.find(s => s.id === product?.storeId))
         qty.changeValue(product.qty)
         unitId.changeValue(units.find(u => u.id === product?.unitId))
-        product.createdDate && createdDate.changeValue(product.createdDate)
-        product.expiryDate && expiryDate.changeValue(product.expiryDate)
+        product.createdDate && setCreatedDate(product.createdDate)
+        product.expiryDate && setExpiryDate(product.expiryDate)
         description.changeValue(product.description)
         setEditing(true);
       }
@@ -46,8 +47,8 @@ const ProductsForm = () => {
       storeId: storeId.value?.id || null,
       qty: qty.value,
       unitId: unitId.value?.id || null,
-      createdDate: createdDate.value ? createdDate.value : null,
-      expiryDate: expiryDate.value ? expiryDate.value : null,
+      createdDate: createdDate ? format(createdDate, "yyyy-MM-dd") : null,
+      expiryDate: expiryDate ? format(expiryDate, "yyyy-MM-dd") : null,
       description: description.value
     }
     if (editing) {
@@ -76,81 +77,82 @@ const ProductsForm = () => {
       <h1 className="text-2xl mb-4 text-gray-800 dark:text-white">
         {editing ? 'تعديل منتج' : 'اضافه منتج'}
       </h1>
-      {loading ? <h3 className='text-center'>تحميل...</h3> : <form>
-        <div className='flex justify-between items-center flex-wrap gap-6'>
-          <div className="mb-4 w-5/12">
-            <Input
-              mandatory
-              label={"اسم المنتج"}
-              {...name.bind}
-              name="name"
-            />
-          </div>
-          <div className="mb-4 w-5/12">
-            <Select
-              mandatory
-              label={"المخزن"}
-              options={stores}
-              getOptionLabel={option => option.name}
-              getOptionValue={option => option.id}
-              {...storeId.bind}
-            />
-          </div>
-          <div className="mb-4 w-5/12">
-            <Input
-              mandatory
-              label={"الرصيد"}
-              {...qty.bind}
-              name="qty"
-            />
-          </div>
-          <div className="mb-4 w-5/12">
-            <Select
-              mandatory
-              label={"وحده القياس"}
-              options={units}
-              getOptionLabel={option => option.name}
-              getOptionValue={option => option.id}
-              {...unitId.bind}
-            />
-          </div>
-          <div className="mb-4 w-5/12">
-            <Input
-              mandatory
-              label={"تاريخ الانتاج"}
-              value={createdDate.value}
-              onChange={e => {
-                createdDate.changeValue(e.target.value);
-              }}
-              type={"date"}
-            />
-          </div>
-          <div className="mb-4 w-5/12">
-            <Input
-              mandatory
-              label={"تاريخ الانتهاء"}
-              value={expiryDate.value}
-              onChange={e => {
-                expiryDate.changeValue(e.target.value);
-              }}
-              type={"date"}
-            />
-          </div>
-          <div className="mb-4 w-5/12">
-            <Input
-              label={"تفاصيل"}
-              {...description.bind}
-              name="description"
-            />
+      {loading ? <h3 className='text-center'>تحميل...</h3> :
+        <form className='mt-10'>
+          <div className='flex justify-between items-center flex-wrap gap-6'>
+            <div className="mb-4 w-5/12">
+              <Input
+                mandatory
+                label={"اسم المنتج"}
+                {...name.bind}
+                name="name"
+              />
+            </div>
+            <div className="mb-4 w-5/12">
+              <Select
+                mandatory
+                label={"المخزن"}
+                options={stores}
+                getOptionLabel={option => option.name}
+                getOptionValue={option => option.id}
+                {...storeId.bind}
+              />
+            </div>
+            <div className="mb-4 w-5/12">
+              <Input
+                mandatory
+                label={"الرصيد"}
+                {...qty.bind}
+                name="qty"
+              />
+            </div>
+            <div className="mb-4 w-5/12">
+              <Select
+                mandatory
+                label={"وحده القياس"}
+                options={units}
+                getOptionLabel={option => option.name}
+                getOptionValue={option => option.id}
+                {...unitId.bind}
+              />
+            </div>
+            <div className="mb-4 w-5/12">
+              <CustomDatePicker
+                label="تاريخ الانتاج"
+                value={createdDate}
+                onChange={setCreatedDate}
+              />
+            </div>
+            <div className="mb-4 w-5/12">
+              <CustomDatePicker
+                label="تاريخ الانتهاء"
+                value={expiryDate}
+                onChange={setExpiryDate}
+              />
+
+            </div>
+            <div className="mb-4 w-5/12">
+              <Input
+                label={"تفاصيل"}
+                {...description.bind}
+                name="description"
+              />
 
 
+            </div>
           </div>
-        </div>
 
-        <Button disabled={!name.value || !storeId.value?.id || !+qty.value || !unitId.value?.id || !createdDate.value || !expiryDate.value} onClick={handleSubmit}>
-          {editing ? 'تعديل' : 'اضافه'}
-        </Button>
-      </form>}
+          <div className='flex items-center justify-end gap-10'>
+            <Button className="btn--red w-36" onClick={() => {
+              navigate('/products');
+            }}>
+              ألغاء
+            </Button>
+            <Button className="btn--primary w-36" disabled={!name.value || !storeId.value?.id || !+qty.value || !unitId.value?.id || !createdDate || !expiryDate} onClick={handleSubmit}>
+              حفظ
+            </Button>
+          </div>
+        </form>}
     </div>
   );
 };

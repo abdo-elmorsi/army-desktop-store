@@ -38,7 +38,7 @@ const StoreForm = () => {
   };
 
   return (
-    <div className="p-6 px-8 rounded-md bg-gray-50 dark:bg-gray-900 ">
+    <div className="p-6 px-8 rounded-md bg-gray-50 dark:bg-gray-900">
       <nav className="text-gray-700 dark:text-gray-300 mb-4">
         <ul className="list-reset flex">
           <li>
@@ -55,9 +55,9 @@ const StoreForm = () => {
       <h1 className="text-2xl mb-4 text-gray-800 dark:text-white">
         {editing ? 'تعديل مخزن' : 'اضافه مخزن'}
       </h1>
-      <form>
-        <div className='flex justify-start items-start flex-wrap gap-6 flex-col'>
-          <div className="mb-4 w-5/12">
+      <form className='mt-10'>
+        <div className='flex justify-between items-start gap-12 min-h-80'>
+          <div className="mb-4 w-6/12">
             <Input
               mandatory
               label={"اسم المخزن"}
@@ -67,7 +67,7 @@ const StoreForm = () => {
 
 
           </div>
-          <div className="mb-4 w-5/12">
+          <div className="mb-4 w-6/12">
             <Input
 
               label={"تفاصيل"}
@@ -79,9 +79,17 @@ const StoreForm = () => {
           </div>
 
         </div>
-        <Button disabled={!name.value} onClick={handleSubmit}>
-          {editing ? 'تعديل' : 'اضافه'}
-        </Button>
+
+        <div className='flex items-center justify-end gap-10'>
+          <Button className="btn--red w-36" onClick={() => {
+            navigate('/stores');
+          }}>
+            ألغاء
+          </Button>
+          <Button className="btn--primary w-36" disabled={!name.value} onClick={handleSubmit}>
+            حفظ
+          </Button>
+        </div>
       </form>
     </div>
   );

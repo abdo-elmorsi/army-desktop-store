@@ -10,6 +10,7 @@
 }
 body {
     margin: 0;
+    font-size: 18px;
 }
 a {
     text-decoration: none;
@@ -77,4 +78,23 @@ ul {
     -moz-transform: translateX(-500px);
     -ms-transform: translateX(-500px);
     -o-transform: translateX(-500px);
+}
+
+/* date picker */
+.react-date-picker__wrapper {
+    width: 100%;
+    border-radius: 3px;
+    -webkit-border-radius: 3px;
+    -moz-border-radius: 3px;
+    -ms-border-radius: 3px;
+    -o-border-radius: 3px;
+}
+
+.dark {
+    .react-date-picker__clear-button,
+    .react-date-picker__calendar-button {
+        svg {
+            stroke: #fff !important;
+        }
+    }
 }
