@@ -10,7 +10,10 @@ function App() {
 
   useEffect(() => {
     const savedDarkMode = localStorage.getItem('darkMode') === 'true';
+    const savedFontSize = localStorage.getItem('font-size') || 16;
     document.documentElement.classList.toggle('dark', savedDarkMode);
+    document.documentElement.style.fontSize = `${savedFontSize}px`
+
   }, []);
   return (
     <Router>
