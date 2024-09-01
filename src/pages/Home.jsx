@@ -14,7 +14,7 @@ const Home = ({ view = false }) => {
   const { data: productsHistory } = useIndexedDB('productsHistory');
   const { data: units } = useIndexedDB('units');
   const [selectedStore, setSelectedStore] = useState(null);
-  const [timer, setTimer] = useSavedState(5, "timer");
+  const [timer, setTimer] = useSavedState(20, "timer");
   const [selectedDate, setSelectedDate] = useSavedState(format(new Date(), "yyyy-MM-dd"), 'selected-date');
 
   useEffect(() => {

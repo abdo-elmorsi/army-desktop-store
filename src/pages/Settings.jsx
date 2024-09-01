@@ -3,8 +3,8 @@ import { useSavedState } from '@/hooks'
 import { Input } from '@/components'
 
 export default function Settings() {
-	const [timer, setTimer] = useSavedState(5, "timer");
-	const [fontSize, setFontSize] = useSavedState(18, 'font-size');
+	const [timer, setTimer] = useSavedState(20, "timer");
+	const [fontSize, setFontSize] = useSavedState(22, 'font-size');
 	useEffect(() => {
 		if (fontSize >= 16 && fontSize <= 25)
 			document.documentElement.style.fontSize = `${fontSize}px`
