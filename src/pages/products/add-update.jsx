@@ -166,6 +166,7 @@ const ProductsForm = () => {
                 label="تاريخ الانتاج"
                 value={createdDate}
                 onChange={setCreatedDate}
+                maxDate={new Date()}
               />
             </div>
             <div className="mb-4 w-5/12">

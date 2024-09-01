@@ -106,18 +106,18 @@ const Products = () => {
       },
       {
         name: "ألاسم",
-        getValue: (row) => row.name,
-        selector: (row) => row.name
+        getValue: (row) => row?.name,
+        selector: (row) => row?.name
       },
       {
         name: "المخزن",
-        getValue: (row) => getLabel(row.storeId, stores),
-        selector: (row) => getLabel(row.storeId, stores)
+        getValue: (row) => getLabel(row?.storeId, stores),
+        selector: (row) => getLabel(row?.storeId, stores)
       },
       {
         name: "الرصيد قبل",
-        getValue: (row) => parseFloat(row.qty),
-        selector: (row) => formatComma(row.qty)
+        getValue: (row) => parseFloat(row?.qty),
+        selector: (row) => formatComma(row?.qty)
       },
       {
         name: "خصم واضافه",
@@ -135,38 +135,38 @@ const Products = () => {
       },
       {
         name: "خصم",
-        getValue: (row) => parseFloat(row.decrease),
+        getValue: (row) => parseFloat(row?.decrease),
         noShow: true
       },
       {
         name: "اضافه",
-        getValue: (row) => parseFloat(row.increase),
+        getValue: (row) => parseFloat(row?.increase),
         noShow: true
       },
       {
         name: "الرصيد الفعلي",
-        getValue: (row) => parseFloat(+row.qty + (+row.increase || 0) - (+row.decrease || 0)),
-        selector: (row) => formatComma(+row.qty + (+row.increase || 0) - (+row.decrease || 0))
+        getValue: (row) => parseFloat(+row?.qty + (+row?.increase || 0) - (+row?.decrease || 0)),
+        selector: (row) => formatComma(+row?.qty + (+row?.increase || 0) - (+row?.decrease || 0))
       },
       {
         name: "وحده القياس",
-        getValue: (row) => getLabel(row.unitId, units),
-        selector: (row) => getLabel(row.unitId, units)
+        getValue: (row) => getLabel(row?.unitId, units),
+        selector: (row) => getLabel(row?.unitId, units)
       },
       {
         name: "تاريخ الانتاج",
-        getValue: (row) => row.createdDate,
-        selector: (row) => row.createdDate
+        getValue: (row) => row?.createdDate,
+        selector: (row) => row?.createdDate
       },
       {
         name: "تاريخ الانتهاء",
-        getValue: (row) => row.expiryDate,
-        selector: (row) => row.expiryDate
+        getValue: (row) => row?.expiryDate,
+        selector: (row) => row?.expiryDate
       },
       {
         name: "الوصف",
-        getValue: (row) => row.description,
-        selector: (row) => row.description
+        getValue: (row) => row?.description,
+        selector: (row) => row?.description
       },
     ]
   }, [stores, units]);
