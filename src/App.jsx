@@ -10,9 +10,10 @@ function App() {
 
   useEffect(() => {
     const savedDarkMode = localStorage.getItem('darkMode') === 'true';
-    const savedFontSize = localStorage.getItem('font-size') || 16;
+    const savedFontSize = JSON.parse(localStorage.getItem('font-size') || "{value:22}");
+
     document.documentElement.classList.toggle('dark', savedDarkMode);
-    document.documentElement.style.fontSize = `${savedFontSize}px`
+    document.documentElement.style.fontSize = `${savedFontSize.value}px`
 
   }, []);
   return (
