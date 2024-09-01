@@ -7,6 +7,7 @@ import { FaEye } from 'react-icons/fa';
 import { BiArrowFromRight } from 'react-icons/bi';
 import { CSSTransition, TransitionGroup } from 'react-transition-group';
 import { differenceInDays, format, parseISO } from 'date-fns';
+import { FaArrowTrendDown, FaArrowTrendUp } from 'react-icons/fa6';
 
 const Home = ({ view = false }) => {
   const { data: stores } = useIndexedDB('stores');
@@ -111,8 +112,14 @@ const Home = ({ view = false }) => {
                 <td className="text-center p-4 text-gray-950 dark:text-gray-50 flex flex-col gap-2">
                   <span>{formatComma(product.qty)} ({getLabel(product.unitId, units)})</span>
                   <div className='flex justify-between items-center '>
-                    <span className='text-red-500'>{formatComma(product?.decrease)}</span>
-                    <span className='text-green-500'>{formatComma(product?.increase)}</span>
+                    <p className='text-green-500 flex gap-2 m-0 items-center justify-center'>
+                      {<FaArrowTrendUp />}
+                      <span>{formatComma(product?.increase)}</span>
+                    </p>
+                    <p className='text-red-500 flex gap-2 m-0 items-center justify-center'>
+                      {<FaArrowTrendDown />}
+                      <span>{formatComma(product?.decrease)}</span>
+                    </p>
                   </div>
                 </td>
                 <td className="text-center p-4 text-gray-800 dark:text-gray-200">{product.createdDate}</td>

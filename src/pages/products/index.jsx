@@ -5,14 +5,15 @@ import { Button } from '@/components';
 import { formatComma, getLabel } from '@/utils';
 import { differenceInDays, format, parseISO } from 'date-fns';
 import { CgArrowUp } from 'react-icons/cg';
-import { FaDownload, FaPrint } from 'react-icons/fa';
+import { FaDownload } from 'react-icons/fa';
+import { FaArrowTrendDown, FaArrowTrendUp } from 'react-icons/fa6';
 
 const Products = () => {
   const navigate = useNavigate();
   const [updateHistoryLoading, setUpdateHistoryLoading] = useState(false)
   const tableRef = useRef(null);
   let { data: products, updateItem: updateProduct, deleteItem } = useIndexedDB('products');
-  const { data: productsHistory, addItem, updateItem, deleteItem: deleteItemFromHistory } = useIndexedDB('productsHistory');
+  const { data: productsHistory, addItem, deleteItem: deleteItemFromHistory } = useIndexedDB('productsHistory');
   const { data: stores } = useIndexedDB('stores');
   const { data: units } = useIndexedDB('units');
 
@@ -121,9 +122,15 @@ const Products = () => {
       {
         name: "خصم واضافه",
         noExport: true,
-        selector: (row) => <div className='flex flex-col gap-2'>
-          <span className='text-red-500'>{formatComma(row?.decrease)}</span>
-          <span className='text-green-500'>{formatComma(row?.increase)}</span>
+        selector: (row) => <div className='flex flex-col gap-2 '>
+          <p className='text-red-500 flex gap-2 m-0 items-center justify-center'>
+            {<FaArrowTrendDown />}
+            <span>{formatComma(row?.decrease)}</span>
+          </p>
+          <p className='text-green-500 flex gap-2 m-0 items-center justify-center'>
+            {<FaArrowTrendUp />}
+            <span>{formatComma(row?.increase)}</span>
+          </p>
         </div>
       },
       {
@@ -202,7 +209,7 @@ const Products = () => {
         };
         updateProducts();
       }
-    }, 500);
+    }, 1000);
   }, []);
 
 
