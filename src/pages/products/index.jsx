@@ -21,9 +21,16 @@ const Products = () => {
   const [selectedStore, setSelectedStore] = useState(null);
 
   const handleDelete = async (id) => {
-    const result = await window.ipcRenderer.showPrompt('هل انت متأكد من حذف هذا المنتج:', 'John Doe');
-    if (result) {
-      deleteItem(id);
+    if (window.location.host.includes('vercel.app')) {
+      const result = window.confirm('هل انت متأكد من حذف هذا المنتج');
+      if (result) {
+        deleteItem(id);
+      }
+    } else {
+      const result = await window.ipcRenderer.showPrompt('هل انت متأكد من حذف هذا المنتج:', 'John Doe');
+      if (result) {
+        deleteItem(id);
+      }
     }
   };
 
