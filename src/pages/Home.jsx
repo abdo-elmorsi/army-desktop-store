@@ -62,7 +62,7 @@ const Home = ({ view = false }) => {
           )}
         </div>
         {view && <h1 className="m-0 text-2xl font-extrabold text-primary dark:text-white">
-          {`الرصيد بتاريخ: ${format(selectedDate || new Date(), "dd-MM-yyyy")}`}
+          {`رصيد المخازن بتاريخ: ${format(selectedDate || new Date(), "dd-MM-yyyy")}`}
         </h1>}
         <div className='flex items-center gap-10'>
           {!view && (
