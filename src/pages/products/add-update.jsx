@@ -108,7 +108,7 @@ const ProductsForm = () => {
               <Input
                 disabled
                 mandatory
-                label={"الرصيد"}
+                label={"الرصيد قبل"}
                 // {...qty.bind}
                 value={formatComma(qty?.value || 0)}
                 name="qty"
