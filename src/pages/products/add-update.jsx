@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useSelect, useIndexedDB, useInput } from '@/hooks';
+import { formatComma } from '@/utils';
 import { Select, Button, Input, CustomDatePicker } from '@/components';
 import { format } from 'date-fns';
 
@@ -9,12 +10,16 @@ const ProductsForm = () => {
   const navigate = useNavigate();
 
   const { data: products, addItem, loading, updateItem } = useIndexedDB('products');
+  const { data: productsHistory } = useIndexedDB('productsHistory');
+
   const { data: stores } = useIndexedDB('stores');
   const { data: units } = useIndexedDB('units');
   const [editing, setEditing] = useState(false);
   const name = useInput("", null);
   const storeId = useSelect("", null);
   const qty = useInput("", "number", true);
+  const increase = useInput("", "number", true);
+  const decrease = useInput("", "number", true);
   const unitId = useSelect("", null);
   const [createdDate, setCreatedDate] = useState("");
   const [expiryDate, setExpiryDate] = useState("");
@@ -25,10 +30,19 @@ const ProductsForm = () => {
   useEffect(() => {
     if (id && products?.length && stores?.length && units?.length) {
       const product = products?.find((products) => products.id === parseInt(id)) || null;
+
+      const yesterDayDate = format(new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate() - 1), "yyyy-MM-dd");
+
+      const lastItemBalance = productsHistory.find(productHis => {
+        return productHis.createdAt === yesterDayDate && productHis?.productId == id
+      });
+
       if (product) {
         name.changeValue(product.name)
         storeId.changeValue(stores.find(s => s.id === product?.storeId))
-        qty.changeValue(product.qty)
+        qty.changeValue((+lastItemBalance?.qty + (+lastItemBalance?.increase || 0) - (+lastItemBalance?.decrease || 0) || 0) || 0)
+        increase.changeValue(product?.increase)
+        decrease.changeValue(product?.decrease)
         unitId.changeValue(units.find(u => u.id === product?.unitId))
         product.createdDate && setCreatedDate(product.createdDate)
         product.expiryDate && setExpiryDate(product.expiryDate)
@@ -46,6 +60,8 @@ const ProductsForm = () => {
       name: name.value,
       storeId: storeId.value?.id || null,
       qty: qty.value,
+      increase: increase.value,
+      decrease: decrease.value,
       unitId: unitId.value?.id || null,
       createdDate: createdDate ? format(createdDate, "yyyy-MM-dd") : null,
       expiryDate: expiryDate ? format(expiryDate, "yyyy-MM-dd") : null,
@@ -89,6 +105,43 @@ const ProductsForm = () => {
               />
             </div>
             <div className="mb-4 w-5/12">
+              <Input
+                disabled
+                mandatory
+                label={"الرصيد"}
+                // {...qty.bind}
+                value={formatComma(qty?.value || 0)}
+                name="qty"
+              />
+            </div>
+            <div className="mb-4 w-5/12">
+              <Input
+
+                label={"أضافه رصيد"}
+                {...increase.bind}
+                name="increase"
+              />
+            </div>
+            <div className="mb-4 w-5/12">
+              <Input
+
+                label={"خصم رصيد"}
+                {...decrease.bind}
+                name="decrease"
+              />
+            </div>
+
+            <div className="mb-4 w-5/12">
+              <Input
+                disabled
+                mandatory
+                label={"الرصيد الفعلي"}
+                value={formatComma(+qty.value + (+increase.value || 0) - (+decrease.value || 0) || 0)}
+
+              />
+            </div>
+
+            <div className="mb-4 w-5/12">
               <Select
                 mandatory
                 label={"المخزن"}
@@ -96,14 +149,6 @@ const ProductsForm = () => {
                 getOptionLabel={option => option.name}
                 getOptionValue={option => option.id}
                 {...storeId.bind}
-              />
-            </div>
-            <div className="mb-4 w-5/12">
-              <Input
-                mandatory
-                label={"الرصيد"}
-                {...qty.bind}
-                name="qty"
               />
             </div>
             <div className="mb-4 w-5/12">
@@ -148,7 +193,14 @@ const ProductsForm = () => {
             }}>
               ألغاء
             </Button>
-            <Button className="btn--primary w-36" disabled={!name.value || !storeId.value?.id || !+qty.value || !unitId.value?.id || !createdDate || !expiryDate} onClick={handleSubmit}>
+            <Button className="btn--primary w-36" disabled={
+              !(+qty.value + (+increase.value || 0) - (+decrease.value || 0)) ||
+              !name.value ||
+              !storeId.value?.id ||
+              !unitId.value?.id ||
+              !createdDate ||
+              !expiryDate
+            } onClick={handleSubmit}>
               حفظ
             </Button>
           </div>

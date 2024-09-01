@@ -15,7 +15,6 @@ const Home = ({ view = false }) => {
   const [selectedStore, setSelectedStore] = useState(null);
   const [timer, setTimer] = useSavedState(5, "timer");
   const [selectedDate, setSelectedDate] = useSavedState(format(new Date(), "yyyy-MM-dd"), 'selected-date');
-  console.log(productsHistory);
 
   useEffect(() => {
     if (stores?.length) {
@@ -35,9 +34,12 @@ const Home = ({ view = false }) => {
   };
 
   const filteredProducts = useMemo(() => {
-    return productsHistory?.filter(product =>
+    const new_products = productsHistory?.filter(product =>
       product.storeId === selectedStore && product.createdAt === format(selectedDate || new Date(), 'yyyy-MM-dd')
     ) || [];
+    return new_products.map(new_product => {
+      return { ...new_product, qty: +new_product.qty + (+new_product?.increase || 0) - (+new_product?.decrease || 0) }
+    })
   }, [productsHistory, selectedDate, selectedStore]);
 
   const isExpiringSoon = (expiryDate) => {
@@ -106,8 +108,12 @@ const Home = ({ view = false }) => {
               <tr className={`border-t ${i % 2 === 0 ? 'bg-gray-100 dark:bg-gray-700' : 'bg-white dark:bg-gray-800'}`}>
                 <td className="text-center p-4 text-gray-800 dark:text-gray-200">{i + 1}</td>
                 <td className="font-bold text-center p-4 text-gray-950 dark:text-gray-50">{product.name}</td>
-                <td className="text-center p-4 text-gray-950 dark:text-gray-50">
-                  {formatComma(product.qty)} ({getLabel(product.unitId, units)})
+                <td className="text-center p-4 text-gray-950 dark:text-gray-50 flex flex-col gap-2">
+                  <span>{formatComma(product.qty)} ({getLabel(product.unitId, units)})</span>
+                  <div className='flex justify-between items-center '>
+                    <span className='text-red-500'>{formatComma(product?.decrease)}</span>
+                    <span className='text-green-500'>{formatComma(product?.increase)}</span>
+                  </div>
                 </td>
                 <td className="text-center p-4 text-gray-800 dark:text-gray-200">{product.createdDate}</td>
                 <td className={`text-center p-4 ${isExpiringSoon(product.expiryDate) ? 'text-red-600' : 'text-gray-800 dark:text-gray-200'}`}>

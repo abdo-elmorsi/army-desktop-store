@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useIndexedDB, useExportExcel } from '@/hooks';
 import { Button } from '@/components';
@@ -11,10 +11,11 @@ const Products = () => {
   const navigate = useNavigate();
   const [updateHistoryLoading, setUpdateHistoryLoading] = useState(false)
   const tableRef = useRef(null);
-  const { data: products, deleteItem } = useIndexedDB('products');
+  let { data: products, updateItem: updateProduct, deleteItem } = useIndexedDB('products');
   const { data: productsHistory, addItem, updateItem, deleteItem: deleteItemFromHistory } = useIndexedDB('productsHistory');
   const { data: stores } = useIndexedDB('stores');
   const { data: units } = useIndexedDB('units');
+
 
   const [selectedStore, setSelectedStore] = useState(null);
 
@@ -30,61 +31,65 @@ const Products = () => {
   };
 
 
+
   const handleExportToHistory = async () => {
-    setUpdateHistoryLoading(true);
-    const currentDate = format(new Date(), "yyyy-MM-dd");
+    try {
+      setUpdateHistoryLoading(true);
 
-    const newProductHistory = products.map(({ id, ...others }) => ({
-      ...others,
-      productId: id,
-      createdAt: currentDate,
-    }));
+      const yesterDayDate = format(new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate() - 1), "yyyy-MM-dd");
+      const currentDate = format(new Date(), "yyyy-MM-dd");
 
-    // Map of existing records for quick lookup
-    const existingRecordsMap = productsHistory.reduce((acc, item) => {
-      if (item.createdAt === currentDate) {
-        acc[item.productId] = item;
-      }
-      return acc;
-    }, {});
+      const new_filtered_products = products.map(pro => {
+        const lastItemBalance = productsHistory.find(productHis => productHis.createdAt === yesterDayDate && productHis.productId === pro.id);
+        return {
+          ...pro,
+          qty: (lastItemBalance ? (+lastItemBalance.qty + (+lastItemBalance.increase || 0) - (+lastItemBalance.decrease || 0)) : 0)
+        };
+      });
 
-    // Determine which records need to be removed
-    const productsIdsSet = new Set(products.map((product) => product.id));
+      const newProductHistory = new_filtered_products.map(({ id, ...others }) => ({
+        ...others,
+        productId: id,
+        createdAt: currentDate,
+      }));
 
-    const obsoleteRecords = Object.values(existingRecordsMap).filter(
-      (record) => !productsIdsSet.has(record.productId)
-    );
+      // Remove all existing records for today
+      await Promise.all(
+        productsHistory
+          .filter(record => record.createdAt === currentDate)
+          .map(record => {
+            deleteItemFromHistory(record.id)
+          })
+      );
 
-    // Remove obsolete records
-    await Promise.all(
-      obsoleteRecords.map((obsoleteItem) => deleteItemFromHistory(obsoleteItem.id))
-    );
-
-    // Update existing records or add new ones
-    await Promise.all(
-      newProductHistory.map(async (newItem) => {
-        const existingItem = existingRecordsMap[newItem.productId];
-        if (existingItem) {
-          // Update existing record
-          const { id, ...others } = existingItem;
-          await updateItem(id, { ...others, ...newItem });
-        } else {
-          // Add new record
+      // Add all new products to history
+      await Promise.all(
+        newProductHistory.map(async newItem => {
           await addItem(newItem);
-        }
-      })
-    );
-
-    setUpdateHistoryLoading(false);
+        })
+      );
+    } catch (error) {
+      console.error("Failed to export to history:", error);
+    } finally {
+      setUpdateHistoryLoading(false);
+    }
   };
 
 
+
   const filteredProducts = useMemo(() => {
-    const new_products = selectedStore ?
+    const yesterDayDate = format(new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate() - 1), "yyyy-MM-dd");
+    const new_filtered_products = selectedStore ?
       products?.filter(product => product.storeId === selectedStore) :
       products;
-    return new_products.sort((a, b) => a.storeId - b.storeId)
-  }, [products, selectedStore]);
+
+    return new_filtered_products.map(pro => {
+      const lastItemBalance = productsHistory.find(productHis => productHis.createdAt === yesterDayDate && productHis?.productId === pro?.id)
+
+
+      return { ...pro, qty: (+lastItemBalance?.qty + (+lastItemBalance?.increase || 0) - (+lastItemBalance?.decrease || 0) || 0) }
+    }).sort((a, b) => a.storeId - b.storeId)
+  }, [products, productsHistory, selectedStore]);
 
   const isExpiringSoon = (expiryDate) => {
     return differenceInDays(parseISO(expiryDate), new Date()) < 30;
@@ -109,9 +114,32 @@ const Products = () => {
         selector: (row) => getLabel(row.storeId, stores)
       },
       {
-        name: "الرصيد",
+        name: "الرصيد قبل",
         getValue: (row) => parseFloat(row.qty),
         selector: (row) => formatComma(row.qty)
+      },
+      {
+        name: "خصم واضافه",
+        noExport: true,
+        selector: (row) => <div className='flex flex-col gap-2'>
+          <span className='text-red-500'>{formatComma(row?.decrease)}</span>
+          <span className='text-green-500'>{formatComma(row?.increase)}</span>
+        </div>
+      },
+      {
+        name: "خصم",
+        getValue: (row) => parseFloat(row.decrease),
+        noShow: true
+      },
+      {
+        name: "اضافه",
+        getValue: (row) => parseFloat(row.increase),
+        noShow: true
+      },
+      {
+        name: "الرصيد الفعلي",
+        getValue: (row) => parseFloat(+row.qty + (+row.increase || 0) - (+row.decrease || 0)),
+        selector: (row) => formatComma(+row.qty + (+row.increase || 0) - (+row.decrease || 0))
       },
       {
         name: "وحده القياس",
@@ -148,6 +176,37 @@ const Products = () => {
   //   window.ipcRenderer.print();
   // };
 
+
+  // in case a new day and there are no history it will reset the increase and decrease
+
+  useEffect(() => {
+    // to remove today history
+    // productsHistory.forEach(element => {
+    //   if (element.createdAt === format(new Date(), "yyyy-MM-dd")) {
+    //     deleteItemFromHistory(element?.id);
+    //   } else {
+    //     return;
+    //   }
+    // });
+    const currentDate = format(new Date(), "yyyy-MM-dd");
+
+    setTimeout(() => {
+      const isTodayExist = productsHistory?.some(product => product.createdAt === currentDate);
+
+      if (!isTodayExist) {
+        const updateProducts = async () => {
+          for (const product of products) {
+            await updateProduct(product.id, { ...product, decrease: 0, increase: 0 });
+          }
+          await handleExportToHistory();
+        };
+        updateProducts();
+      }
+    }, 500);
+  }, []);
+
+
+
   return (
     <div className="p-4 bg-gray-50 dark:bg-gray-900">
       <h1 className="text-2xl mb-4 text-gray-800 dark:text-white">المنتجات</h1>
@@ -155,7 +214,7 @@ const Products = () => {
         <Link to="/products/add" className="bg-primary text-white px-4 py-2 rounded hover:bg-hoverPrimary">
           اضافه منتج
         </Link>
-        <Button disabled={updateHistoryLoading} onClick={handleExportToHistory} className="bg-primary text-white flex items-center gap-2">
+        <Button disabled={updateHistoryLoading} onClick={() => handleExportToHistory()} className="bg-primary text-white flex items-center gap-2">
           <span>حفظ تعديلات اليوم</span>
           <CgArrowUp />
         </Button>
@@ -185,7 +244,7 @@ const Products = () => {
       <table ref={tableRef} className="w-full bg-white dark:bg-gray-800 shadow-md rounded border border-gray-200 dark:border-gray-700">
         <thead id="printableArea" className="bg-gray-100 dark:bg-gray-700">
           <tr>
-            {columns.map(columns => {
+            {columns.filter(c => !c.noShow)?.map(columns => {
               return <th key={columns.name} className="p-4 text-gray-800 dark:text-gray-300">{columns.name}</th>
             })}
             <th className="p-4 text-gray-800 dark:text-gray-300">الاوامر</th>
@@ -195,7 +254,7 @@ const Products = () => {
         <tbody>
           {filteredProducts.map((product, i) => (
             <tr key={product.id} className="border-t border-gray-200 dark:border-gray-700">
-              {columns.map(column => {
+              {columns.filter(c => !c.noShow)?.map(column => {
                 if (column.name === "تاريخ الانتهاء") {
                   <td className={`text-center p-4 ${isExpiringSoon(column.selector(product, i)) ? 'text-red-600' : 'text-gray-800 dark:text-gray-200'}`}>
                     {column.selector(product, i)}

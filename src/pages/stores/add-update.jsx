@@ -30,7 +30,6 @@ const StoreForm = () => {
     if (editing) {
       updateItem(parseInt(id), { name: name.value, description: description.value });
     } else {
-      console.log({ name: name.value, description: description.value });
 
       addItem({ name: name.value, description: description.value });
     }
