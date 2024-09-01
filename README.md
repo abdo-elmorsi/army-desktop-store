@@ -23,5 +23,5 @@ This is a warehouse management system built with Electron and React. The app is 
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/your-username/store-products-management.git
-   cd store-products-management
+   git clone https://github.com/abdo-elmorsi/electron-store.git
+   cd electron-store
