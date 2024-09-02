@@ -1,13 +1,14 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLocalStorageUser } from '@/hooks';
+import { Progress } from '@/components';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import CopyrightFooter from '../CopyrightFooter';
 
 const Layout = ({ children }) => {
 	const navigate = useNavigate();
-	const { user, isAuthenticated, isLoading } = useLocalStorageUser();
+	const { isAuthenticated, isLoading } = useLocalStorageUser();
 
 	useEffect(() => {
 		// Redirect to login if not authenticated and loading is complete
@@ -19,9 +20,7 @@ const Layout = ({ children }) => {
 	// Display loading state or redirect based on authentication
 	if (isLoading) {
 		return (
-			<div className="flex items-center justify-center h-screen bg-gray-100 dark:bg-gray-900">
-				<div className="text-gray-700 dark:text-gray-300">Loading...</div>
-			</div>
+			<Progress />
 		);
 	}
 

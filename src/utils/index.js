@@ -1,3 +1,5 @@
+import { differenceInDays, parseISO } from "date-fns";
+
 export const getLabel = (id, arr = []) => {
     return arr?.find((a) => a.id === id)?.name || "";
 };
@@ -46,3 +48,8 @@ export const getMinDateInArray = (array = [], key = "createdAt") => {
         .reduce((min, date) => (date < min ? date : min), new Date());
     return minDate
 };
+
+
+export const isExpiringSoon = (expiryDate) => {
+    return differenceInDays(parseISO(expiryDate), new Date()) < 30;
+  };

@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useIndexedDB, useExportExcel } from '@/hooks';
+import { useIndexedDB, useExportExcel, useFilteredProducts } from '@/hooks';
 import { Button } from '@/components';
-import { formatComma, getLabel } from '@/utils';
-import { differenceInDays, format, parseISO } from 'date-fns';
+import { formatComma, getLabel, isExpiringSoon } from '@/utils';
+import { format } from 'date-fns';
 import { CgArrowUp } from 'react-icons/cg';
 import { FaDownload } from 'react-icons/fa';
 import { FaArrowTrendDown, FaArrowTrendUp } from 'react-icons/fa6';
@@ -12,74 +12,76 @@ const Products = () => {
   const navigate = useNavigate();
   const [updateHistoryLoading, setUpdateHistoryLoading] = useState(false)
   const tableRef = useRef(null);
-  let { data: products, loading: loadingProducts, updateItem: updateProduct, deleteItem } = useIndexedDB('products');
-  const { data: productsHistory, loading: loadingProductsHistory, addItem, deleteItem: deleteItemFromHistory } = useIndexedDB('productsHistory');
+  let { data: products, loading: loadingProducts, updateItem: updateProduct, deleteItem: deleteItemFromProduct } = useIndexedDB('products');
+  const { data: productsHistory, loading: loadingProductsHistory, addItem: addItemToProductHistory, deleteItem: deleteItemFromHistory } = useIndexedDB('productsHistory');
   const { data: stores, loading: loadingStores } = useIndexedDB('stores');
   const { data: units } = useIndexedDB('units');
+  const { getProductHistoryForYesterday } = useIndexedDB();
 
 
   const [selectedStore, setSelectedStore] = useState(null);
+
+  const filteredProducts = useFilteredProducts(selectedStore);
+
 
   const handleDelete = async (id) => {
     if (window.location.host.includes('vercel.app')) {
       const result = window.confirm('هل انت متأكد من حذف هذا المنتج');
       if (result) {
-        deleteItem(id);
+        deleteItemFromProduct(id);
       }
     } else {
       const result = await window.ipcRenderer.showPrompt('هل انت متأكد من حذف هذا المنتج:', 'John Doe');
       if (result) {
-        deleteItem(id);
+        deleteItemFromProduct(id);
       }
     }
   };
 
-  const handleEdit = (id) => {
-    navigate(`/products/edit/${id}`);
-  };
+
 
 
 
   const handleExportToHistory = async (isNewDate = false) => {
     try {
       setUpdateHistoryLoading(true);
+      const today = format(new Date(), "yyyy-MM-dd");
 
-      const yesterDayDate = format(new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate() - 1), "yyyy-MM-dd");
-      const currentDate = format(new Date(), "yyyy-MM-dd");
-
-      const new_filtered_products = products.map(pro => {
-        const lastItemBalance = productsHistory.find(productHis => productHis.createdAt === yesterDayDate && productHis.productId === pro.id);
-        return {
-          ...pro,
-          qty: (lastItemBalance ? (+lastItemBalance.qty + (+lastItemBalance.increase || 0) - (+lastItemBalance.decrease || 0)) : 0),
-          ...(isNewDate ? [{
-            increase: 0,
-            decrease: 0,
-          }] : [])
-        };
-      });
-
-      const newProductHistory = new_filtered_products.map(({ id, ...others }) => ({
-        ...others,
-        productId: id,
-        createdAt: currentDate,
-      }));
-
-      // Remove all existing records for today
-      await Promise.all(
-        productsHistory
-          .filter(record => record.createdAt === currentDate)
-          .map(record => {
-            deleteItemFromHistory(record.id)
-          })
-      );
-
-      // Add all new products to history
-      await Promise.all(
-        newProductHistory.map(async newItem => {
-          await addItem(newItem);
+      // Map products to include quantities and conditional fields
+      const newFilteredProducts = await Promise.all(
+        products.map(async (pro) => {
+          const lastItemBalance = await getProductHistoryForYesterday(pro?.id);
+          return {
+            ...pro,
+            qty: lastItemBalance
+              ? (+lastItemBalance.qty + (+lastItemBalance.increase || 0) - (+lastItemBalance.decrease || 0))
+              : 0,
+            ...(isNewDate ? { increase: 0, decrease: 0 } : {}),
+          };
         })
       );
+
+      // Create new product history entries
+      const newProductHistory = newFilteredProducts.map(({ id, ...others }) => ({
+        ...others,
+        productId: id,
+        createdAt: today,
+      }));
+
+      // Remove existing records for today
+      const existingRecords = productsHistory.filter(record => record.createdAt === today);
+      if (existingRecords.length > 0) {
+        await Promise.all(
+          existingRecords.map(record => deleteItemFromHistory(record.id))
+        );
+      }
+
+      // Add new products to history
+      if (newProductHistory.length > 0) {
+        await Promise.all(
+          newProductHistory.map(newItem => addItemToProductHistory(newItem))
+        );
+      }
     } catch (error) {
       console.error("Failed to export to history:", error);
     } finally {
@@ -89,23 +91,8 @@ const Products = () => {
 
 
 
-  const filteredProducts = useMemo(() => {
-    const yesterDayDate = format(new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate() - 1), "yyyy-MM-dd");
-    const new_filtered_products = selectedStore ?
-      products?.filter(product => product.storeId === selectedStore) :
-      products;
-
-    return new_filtered_products.map(pro => {
-      const lastItemBalance = productsHistory.find(productHis => productHis.createdAt === yesterDayDate && productHis?.productId === pro?.id)
 
 
-      return { ...pro, qty: (+lastItemBalance?.qty + (+lastItemBalance?.increase || 0) - (+lastItemBalance?.decrease || 0) || 0) }
-    }).sort((a, b) => a.storeId - b.storeId)
-  }, [products, productsHistory, selectedStore]);
-
-  const isExpiringSoon = (expiryDate) => {
-    return differenceInDays(parseISO(expiryDate), new Date()) < 30;
-  };
 
 
   const columns = useMemo(() => {
@@ -172,7 +159,7 @@ const Products = () => {
       {
         name: "تاريخ الانتهاء",
         getValue: (row) => row?.expiryDate,
-        selector: (row) => row?.expiryDate
+        selector: (row) => <span className={`${isExpiringSoon(row?.expiryDate) ? "text-red-500" : ""}`}>{row?.expiryDate}</span>
       },
       {
         name: "الوصف",
@@ -291,7 +278,7 @@ const Products = () => {
                     <td key={column.name} className="p-4 text-gray-800 dark:text-gray-200">{column.selector(product, i)}</td>
                   ))}
                   <td className="p-4 flex justify-center gap-2">
-                    <Button onClick={() => handleEdit(product.id)} className="bg-primary text-white">تعديل</Button>
+                    <Button onClick={() => navigate(`/products/edit/${product.id}`)} className="bg-primary text-white">تعديل</Button>
                     <Button onClick={() => handleDelete(product.id)} className="btn--red">حذف</Button>
                   </td>
                 </tr>

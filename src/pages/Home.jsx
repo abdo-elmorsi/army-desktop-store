@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useSavedState, useIndexedDB } from '@/hooks';
 import { Button, CustomDatePicker } from '@/components';
-import { formatComma, getLabel, getDateDifference, getMinDateInArray } from '@/utils';
+import { formatComma, getLabel, getDateDifference, getMinDateInArray, isExpiringSoon } from '@/utils';
 import { Link } from 'react-router-dom';
 import { FaEye } from 'react-icons/fa';
 import { BiArrowFromRight } from 'react-icons/bi';
-import { differenceInDays, format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import { FaArrowTrendDown, FaArrowTrendUp } from 'react-icons/fa6';
 
 const Home = ({ view = false }) => {
@@ -47,16 +47,13 @@ const Home = ({ view = false }) => {
 
   const filteredProducts = useMemo(() => {
     return (productsHistory?.filter(product =>
-      product.storeId === selectedStore && product.createdAt === format(selectedDate, 'yyyy-MM-dd')
+      product.storeId === selectedStore && product.createdAt === format(selectedDate || new Date(), 'yyyy-MM-dd')
     ) || []).map(new_product => ({
       ...new_product,
       qty: (+new_product?.qty + (+new_product?.increase || 0) - (+new_product?.decrease || 0)) || 0,
     }));
   }, [productsHistory, selectedDate, selectedStore]);
 
-  const isExpiringSoon = useCallback((expiryDate) => {
-    return differenceInDays(parseISO(expiryDate), new Date()) < 30;
-  }, []);
 
   return (
     <div className="p-4 bg-gray-50 dark:bg-gray-900">
@@ -82,7 +79,7 @@ const Home = ({ view = false }) => {
             <CustomDatePicker
               minDate={getMinDateInArray(productsHistory, "createdAt")}
               maxDate={new Date()}
-              value={selectedDate}
+              value={selectedDate || new Date()}
               onChange={setSelectedDate}
             />
           )}

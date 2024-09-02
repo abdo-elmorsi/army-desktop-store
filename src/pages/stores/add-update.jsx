@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useIndexedDB, useInput } from '@/hooks';
 import { Button, Input } from '@/components';
@@ -6,35 +6,50 @@ import { Button, Input } from '@/components';
 const StoreForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { data: stores, addItem, updateItem } = useIndexedDB('stores');
-  const [editing, setEditing] = useState(false);
+  const { data: stores, addItem, loading, updateItem } = useIndexedDB('stores');
 
   const name = useInput("", null);
   const description = useInput("", null);
 
   useEffect(() => {
-    if (id) {
+    if (id && !loading) {
       const store = stores.find((store) => store.id === parseInt(id));
       if (store) {
         name.changeValue(store.name)
         description.changeValue(store.description)
-        setEditing(true);
       }
     }
-  }, [id, stores]);
+  }, [id, loading]);
 
 
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (editing) {
+    if (id) {
       updateItem(parseInt(id), { name: name.value, description: description.value });
     } else {
-
       addItem({ name: name.value, description: description.value });
     }
     navigate('/stores');
   };
+
+
+  if (loading && id) {
+    return (
+      <div className="p-6 px-8 rounded-md bg-gray-50 dark:bg-gray-900 animate-pulse">
+        <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-2/5 mb-6"></div>
+        <div className="h-8 bg-gray-300 dark:bg-gray-700 rounded w-1/5 mb-14"></div>
+        <div className='flex justify-between items-center flex-wrap gap-8'>
+          <div className="h-10 bg-gray-300 dark:bg-gray-700 rounded w-2/5 mb-4"></div>
+          <div className="h-10 bg-gray-300 dark:bg-gray-700 rounded w-2/5 mb-4"></div>
+        </div>
+        <div className="flex justify-end gap-4 mt-8">
+          <div className="h-10 bg-gray-300 dark:bg-gray-700 rounded w-36"></div>
+          <div className="h-10 bg-gray-300 dark:bg-gray-700 rounded w-36"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 px-8 rounded-md bg-gray-50 dark:bg-gray-900">
@@ -46,20 +61,20 @@ const StoreForm = () => {
             </Link>
           </li>
           <li className="mx-2">/</li>
-          <li className={editing ? 'text-gray-800 dark:text-white' : 'text-gray-700 dark:text-gray-300'}>
-            {editing ? 'تعديل' : 'أضافه'}
+          <li className={id ? 'text-gray-800 dark:text-white' : 'text-gray-700 dark:text-gray-300'}>
+            {id ? 'تعديل' : 'أضافه'}
           </li>
         </ul>
       </nav>
       <h1 className="text-2xl mb-4 text-gray-800 dark:text-white">
-        {editing ? 'تعديل مخزن' : 'اضافه مخزن'}
+        {id ? 'تعديل' : 'أضافه'}
       </h1>
       <form className='mt-10'>
         <div className='flex justify-between items-start gap-12 min-h-80'>
           <div className="mb-4 w-6/12">
             <Input
               mandatory
-              label={"اسم المخزن"}
+              label={"ألاسم"}
               {...name.bind}
               name="name"
             />
@@ -73,16 +88,10 @@ const StoreForm = () => {
               {...description.bind}
               name="description"
             />
-
-
           </div>
-
         </div>
-
         <div className='flex items-center justify-end gap-10'>
-          <Button className="btn--red w-36" onClick={() => {
-            navigate('/stores');
-          }}>
+          <Button className="btn--red w-36" onClick={() => navigate('/stores')}>
             ألغاء
           </Button>
           <Button className="btn--primary w-36" disabled={!name.value} onClick={handleSubmit}>

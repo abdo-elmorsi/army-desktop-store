@@ -1,6 +1,6 @@
 import React, { useEffect, lazy, Suspense } from 'react';
 import { HashRouter as Router, Route, Routes } from 'react-router-dom';
-import { Layout } from '@/components';
+import { Layout, Progress } from '@/components';
 
 // Lazy load the pages
 const Home = lazy(() => import('@/pages/Home'));
@@ -27,7 +27,7 @@ function App() {
 
   return (
     <Router>
-      <Suspense fallback={<h3 className='text-center mt-5'>تحميل...</h3>}>
+      <Suspense fallback={<Progress />}>
         <Routes>
           <Route path="/" element={<Layout><Home /></Layout>} />
           <Route path="/view" element={<Home view={true} />} />

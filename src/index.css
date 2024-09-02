@@ -111,7 +111,7 @@ ul {
 }
 
 .react-date-picker__calendar {
-    z-index: 15;
+    z-index: 15 !important;
 }
 .dark {
     .react-date-picker__clear-button,

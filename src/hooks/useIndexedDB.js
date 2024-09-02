@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import Dexie from "dexie";
+import { format, subDays } from "date-fns";
 
 const db = new Dexie("myDatabase");
 db.version(1).stores({
     users: "++id,username",
     stores: "++id",
     products: "++id",
-    productsHistory: "++id",
+    productsHistory: "++id,productId,createdAt",
     units: "++id",
 });
 
@@ -35,7 +36,7 @@ const useIndexedDB = (storeName) => {
             }
         };
 
-        fetchData();
+        storeName && fetchData();
     }, [storeName]);
 
     const addItem = useCallback(
@@ -159,6 +160,29 @@ const useIndexedDB = (storeName) => {
         }
     }, []);
 
+    const getProductHistoryForYesterday = useCallback(async (productId) => {
+        try {
+            const yesterday = format(subDays(new Date(), 1), "yyyy-MM-dd");
+            const productHistory = await db.productsHistory
+                .where("productId")
+                .equals(parseInt(productId))
+                .and(
+                    (ph) =>
+                        format(new Date(ph.createdAt), "yyyy-MM-dd") ===
+                        yesterday
+                )
+                .first();
+            return productHistory || null;
+        } catch (err) {
+            setState((prev) => ({
+                ...prev,
+                error: err.message || "Error fetching product history",
+                loading: false,
+            }));
+            throw err;
+        }
+    }, []);
+
     const value = useMemo(
         () => ({
             data: state.data,
@@ -170,6 +194,7 @@ const useIndexedDB = (storeName) => {
             registerUser,
             loginUser,
             getUserRole,
+            getProductHistoryForYesterday,
         }),
         [
             state,
@@ -179,6 +204,7 @@ const useIndexedDB = (storeName) => {
             registerUser,
             loginUser,
             getUserRole,
+            getProductHistoryForYesterday,
         ]
     );
 
