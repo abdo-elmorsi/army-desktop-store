@@ -39,7 +39,7 @@ const Home = ({ view = false }) => {
       product.storeId === selectedStore && product.createdAt === format(selectedDate || new Date(), 'yyyy-MM-dd')
     ) || [];
     return new_products.map(new_product => {
-      return { ...new_product, qty: +new_product.qty + (+new_product?.increase || 0) - (+new_product?.decrease || 0) }
+      return { ...new_product, qty: (+new_product?.qty + (+new_product?.increase || 0) - (+new_product?.decrease || 0) || 0), }
     })
   }, [productsHistory, selectedDate, selectedStore]);
 

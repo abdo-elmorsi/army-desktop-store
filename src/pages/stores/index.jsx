@@ -8,10 +8,16 @@ const Stores = () => {
   const navigate = useNavigate();
 
   const handleDelete = async (id) => {
-    const result = await window.ipcRenderer.showPrompt('هل انت متأكد من حذف هذا المخزن:', 'John Doe');
-    if (result) {
-      deleteItem(id);
-      return;
+    if (window.location.host.includes('vercel.app')) {
+      const result = window.confirm('هل انت متأكد من حذف هذا المخزن');
+      if (result) {
+        deleteItem(id);
+      }
+    } else {
+      const result = await window.ipcRenderer.showPrompt('هل انت متأكد من حذف هذا المخزن:', 'John Doe');
+      if (result) {
+        deleteItem(id);
+      }
     }
   };
 

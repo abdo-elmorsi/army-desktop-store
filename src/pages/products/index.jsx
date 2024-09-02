@@ -40,7 +40,7 @@ const Products = () => {
 
 
 
-  const handleExportToHistory = async () => {
+  const handleExportToHistory = async (isNewDate = false) => {
     try {
       setUpdateHistoryLoading(true);
 
@@ -51,7 +51,11 @@ const Products = () => {
         const lastItemBalance = productsHistory.find(productHis => productHis.createdAt === yesterDayDate && productHis.productId === pro.id);
         return {
           ...pro,
-          qty: (lastItemBalance ? (+lastItemBalance.qty + (+lastItemBalance.increase || 0) - (+lastItemBalance.decrease || 0)) : 0)
+          qty: (lastItemBalance ? (+lastItemBalance.qty + (+lastItemBalance.increase || 0) - (+lastItemBalance.decrease || 0)) : 0),
+          ...(isNewDate ? [{
+            increase: 0,
+            decrease: 0,
+          }] : [])
         };
       });
 
@@ -214,7 +218,7 @@ const Products = () => {
             for (const product of products) {
               await updateProduct(product.id, { ...product, decrease: 0, increase: 0 });
             }
-            await handleExportToHistory();
+            await handleExportToHistory(true);
           };
           updateProducts();
         }
