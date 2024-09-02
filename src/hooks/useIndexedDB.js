@@ -22,6 +22,9 @@ const useIndexedDB = (storeName) => {
             setState({ data: [], error: null, loading: true });
             try {
                 const result = await db[storeName].toArray();
+                // create delay for loading
+                await new Promise((resolve) => setTimeout(resolve, 200)); // simulate delay of 1 second
+
                 setState({ data: result, error: null, loading: false });
             } catch (err) {
                 setState({

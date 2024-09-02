@@ -4,7 +4,7 @@ import { useIndexedDB } from '@/hooks';
 import { Button } from '@/components';
 
 const Stores = () => {
-  const { data: stores, deleteItem } = useIndexedDB('stores');
+  const { data: stores, deleteItem, loading } = useIndexedDB('stores');
   const navigate = useNavigate();
 
   const handleDelete = async (id) => {
@@ -25,7 +25,6 @@ const Stores = () => {
     navigate(`/stores/edit/${id}`);
   };
 
-
   return (
     <div className="p-4 bg-gray-50 dark:bg-gray-900">
       <h1 className="text-2xl mb-4 text-gray-800 dark:text-white">المخازن</h1>
@@ -45,27 +44,27 @@ const Stores = () => {
           </tr>
         </thead>
         <tbody>
-          {stores.map((store, i) => (
-            <tr key={store.id} className="border-t border-gray-200 dark:border-gray-700">
-              <td className=" text-center p-4 text-gray-800 dark:text-gray-200">{i + 1}</td>
-              <td className=" text-center p-4 text-gray-800 dark:text-gray-200">{store.name}</td>
-              <td className=" text-center p-4 text-gray-800 dark:text-gray-200">{store.description}</td>
-              <td className="p-4 justify-center  gap-2 flex">
-                <Button
-                  onClick={() => handleEdit(store.id)}
-                  className="bg-primary text-white"
-                >
-                  تعديل
-                </Button>
-                <Button
-                  onClick={() => handleDelete(store.id)}
-                  className="btn--red"
-                >
-                  حذف
-                </Button>
-              </td>
-            </tr>
-          ))}
+          {loading ? (
+            Array.from({ length: 5 }).map((_, index) => (
+              <TableSkeleton key={index} />
+            ))
+          ) : (
+            stores.map((store, i) => (
+              <tr key={store.id} className="border-t border-gray-200 dark:border-gray-700">
+                <td className="text-center p-4 text-gray-800 dark:text-gray-200">{i + 1}</td>
+                <td className="text-center p-4 text-gray-800 dark:text-gray-200">{store.name}</td>
+                <td className="text-center p-4 text-gray-800 dark:text-gray-200">{store.description}</td>
+                <td className="p-4 justify-center gap-2 flex">
+                  <Button onClick={() => handleEdit(store.id)} className="bg-primary text-white">
+                    تعديل
+                  </Button>
+                  <Button onClick={() => handleDelete(store.id)} className="btn--red">
+                    حذف
+                  </Button>
+                </td>
+              </tr>
+            ))
+          )}
         </tbody>
       </table>
     </div>
@@ -73,3 +72,24 @@ const Stores = () => {
 };
 
 export default Stores;
+
+
+const TableSkeleton = () => {
+  return <tr className="border-t border-gray-200 dark:border-gray-700">
+    <td className="p-4 text-center">
+      <div className="animate-pulse bg-gray-300 rounded h-8 w-12 mx-auto"></div>
+    </td>
+    <td className="p-4 text-center">
+      <div className="animate-pulse bg-gray-300 rounded h-8 w-32 mx-auto"></div>
+    </td>
+    <td className="p-4 text-center">
+      <div className="animate-pulse bg-gray-300 rounded h-8 w-48 mx-auto"></div>
+    </td>
+    <td className="p-4 text-center">
+      <div className="flex justify-center gap-2">
+        <div className="animate-pulse bg-gray-300 rounded h-8 w-16"></div>
+        <div className="animate-pulse bg-gray-300 rounded h-8 w-16"></div>
+      </div>
+    </td>
+  </tr>
+}

@@ -23,7 +23,7 @@ const Header = () => {
 	};
 
 	return (
-		<header className="bg-primary text-white p-4 shadow-md flex items-center justify-between">
+		<header className="bg-primary text-white p-4 py-3 shadow-md flex items-center justify-between">
 			<div className="flex items-center justify-start gap-4">
 				<Link to="/" className="text-xl font-bold flex items-center">
 					<img

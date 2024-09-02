@@ -14,7 +14,7 @@ const Products = () => {
   const tableRef = useRef(null);
   let { data: products, loading: loadingProducts, updateItem: updateProduct, deleteItem } = useIndexedDB('products');
   const { data: productsHistory, loading: loadingProductsHistory, addItem, deleteItem: deleteItemFromHistory } = useIndexedDB('productsHistory');
-  const { data: stores } = useIndexedDB('stores');
+  const { data: stores, loading: loadingStores } = useIndexedDB('stores');
   const { data: units } = useIndexedDB('units');
 
 
@@ -240,18 +240,25 @@ const Products = () => {
           <CgArrowUp />
         </Button>
       </div>
-      <ul className='flex gap-4 mb-3'>
-        {stores.map(store => (
-          <li key={store.id}>
-            <Button
-              onClick={() => setSelectedStore(selectedStore !== store.id ? store.id : null)}
-              className={selectedStore === store.id ? "btn--primary" : "btn--secondary"}
-            >
-              {store.name}
-            </Button>
-          </li>
-        ))}
-      </ul>
+      {/* Store Buttons */}
+      {loadingStores ? (
+        <StoreSkeleton />
+      ) : (
+        <ul className="flex gap-4 justify-start items-center mb-3">
+          {stores.map((store) => (
+            <li key={store.id}>
+              <Button
+                onClick={() => setSelectedStore(selectedStore !== store.id ? store.id : null)}
+                className={`px-10 text-xl  ${selectedStore === store.id ? "btn--primary" : "btn--secondary"}`}
+              >
+                {store.name}
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+
       <div className='flex gap-2 items-center justify-end'>
         <Button onClick={() => exportExcel(`المنتجات-${format(new Date, "yyyy-MM-dd")}`)} className="flex gap-2 items-center">
           <span>تنزيل اكسيل</span>
@@ -262,37 +269,67 @@ const Products = () => {
           <FaPrint />
         </Button> */}
       </div>
-      <table ref={tableRef} className="w-full bg-white dark:bg-gray-800 shadow-md rounded border border-gray-200 dark:border-gray-700">
-        <thead id="printableArea" className="bg-gray-100 dark:bg-gray-700">
-          <tr>
-            {columns.filter(c => !c.noShow)?.map(columns => {
-              return <th key={columns.name} className="p-4 text-gray-800 dark:text-gray-300">{columns.name}</th>
-            })}
-            <th className="p-4 text-gray-800 dark:text-gray-300">الاوامر</th>
-
-          </tr>
-        </thead>
-        <tbody>
-          {filteredProducts.map((product, i) => (
-            <tr key={product.id} className="border-t border-gray-200 dark:border-gray-700">
-              {columns.filter(c => !c.noShow)?.map(column => {
-                if (column.name === "تاريخ الانتهاء") {
-                  <td className={`text-center p-4 ${isExpiringSoon(column.selector(product, i)) ? 'text-red-600' : 'text-gray-800 dark:text-gray-200'}`}>
-                    {column.selector(product, i)}
-                  </td>
-                }
-                return <th key={column.name} className="p-4 text-gray-800 dark:text-gray-300">{column.selector(product, i)}</th>
-              })}
-              <td className="p-4 flex justify-center gap-2">
-                <Button onClick={() => handleEdit(product.id)} className="bg-primary text-white">تعديل</Button>
-                <Button onClick={() => handleDelete(product.id)} className="btn--red">حذف</Button>
-              </td>
+      <div className="overflow-auto" style={{ height: '55vh' }}>
+        <table ref={tableRef} className="w-full bg-white dark:bg-gray-800 shadow-md rounded border border-gray-200 dark:border-gray-700">
+          <thead className="bg-gray-100 dark:bg-gray-700 sticky top-0 z-10">
+            <tr>
+              {columns.filter(c => !c.noShow)?.map(column => (
+                <th key={column.name} className="p-4 text-gray-800 dark:text-gray-300">{column.name}</th>
+              ))}
+              <th className="p-4 text-gray-800 dark:text-gray-300">الاوامر</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {(loadingProducts || loadingProductsHistory) ? (
+              Array.from({ length: 5 }).map((_, index) => (
+                <TableSkeleton columns={columns} key={index} />
+              ))
+            ) : (
+              filteredProducts.map((product, i) => (
+                <tr key={product.id} className="border-t border-gray-200 dark:border-gray-700">
+                  {columns.filter(c => !c.noShow)?.map(column => (
+                    <td key={column.name} className="p-4 text-gray-800 dark:text-gray-200">{column.selector(product, i)}</td>
+                  ))}
+                  <td className="p-4 flex justify-center gap-2">
+                    <Button onClick={() => handleEdit(product.id)} className="bg-primary text-white">تعديل</Button>
+                    <Button onClick={() => handleDelete(product.id)} className="btn--red">حذف</Button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };
 
 export default Products;
+
+
+
+const TableSkeleton = ({ columns }) => {
+  return <tr className="border-t border-gray-200 dark:border-gray-700">
+    {columns.filter(c => !c.noShow).map((_, index) => (
+      <td key={index} className="p-4 text-center">
+        <div className="animate-pulse bg-gray-300 rounded h-8 mx-auto"></div>
+      </td>
+    ))}
+    <td className="p-4 text-center">
+      <div className="flex justify-center gap-2">
+        <div className="animate-pulse bg-gray-300 rounded h-8 w-16"></div>
+        <div className="animate-pulse bg-gray-300 rounded h-8 w-16"></div>
+      </div>
+    </td>
+  </tr>
+}
+
+const StoreSkeleton = () => {
+  return (
+    <div className="flex gap-4 justify-start items-center mb-3">
+      {Array.from({ length: 4 }).map((_, index) => (
+        <div key={index} className="animate-pulse bg-gray-300 rounded h-10 w-32"></div>
+      ))}
+    </div>
+  );
+};
