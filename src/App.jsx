@@ -4,9 +4,9 @@ import { Layout, Progress } from '@/components';
 
 // Lazy load the pages
 const Home = lazy(() => import('@/pages/Home'));
-const Products = lazy(() => import('@/pages/Products'));
-const Stores = lazy(() => import('@/pages/Stores'));
-const Units = lazy(() => import('@/pages/Units'));
+const Products = lazy(() => import('@/pages/products'));
+const Stores = lazy(() => import('@/pages/stores'));
+const Units = lazy(() => import('@/pages/units'));
 const Settings = lazy(() => import('@/pages/Settings'));
 const SignUp = lazy(() => import('@/pages/SignUp'));
 const Login = lazy(() => import('@/pages/Login'));
