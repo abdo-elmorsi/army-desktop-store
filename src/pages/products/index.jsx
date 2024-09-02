@@ -12,8 +12,8 @@ const Products = () => {
   const navigate = useNavigate();
   const [updateHistoryLoading, setUpdateHistoryLoading] = useState(false)
   const tableRef = useRef(null);
-  let { data: products, updateItem: updateProduct, deleteItem } = useIndexedDB('products');
-  const { data: productsHistory, addItem, deleteItem: deleteItemFromHistory } = useIndexedDB('productsHistory');
+  let { data: products, loading: loadingProducts, updateItem: updateProduct, deleteItem } = useIndexedDB('products');
+  const { data: productsHistory, loading: loadingProductsHistory, addItem, deleteItem: deleteItemFromHistory } = useIndexedDB('productsHistory');
   const { data: stores } = useIndexedDB('stores');
   const { data: units } = useIndexedDB('units');
 
@@ -193,31 +193,34 @@ const Products = () => {
 
   // in case a new day and there are no history it will reset the increase and decrease
 
+  // to remove today history
+  // productsHistory.forEach(element => {
+  //   if (element.createdAt === format(new Date(), "yyyy-MM-dd")) {
+  //     deleteItemFromHistory(element?.id);
+  //   } else {
+  //     return;
+  //   }
+  // });
+
   useEffect(() => {
-    // to remove today history
-    // productsHistory.forEach(element => {
-    //   if (element.createdAt === format(new Date(), "yyyy-MM-dd")) {
-    //     deleteItemFromHistory(element?.id);
-    //   } else {
-    //     return;
-    //   }
-    // });
+
     const currentDate = format(new Date(), "yyyy-MM-dd");
+    if (!loadingProducts && !loadingProductsHistory) {
+      setTimeout(() => {
+        const isTodayExist = productsHistory?.some(product => product.createdAt === currentDate);
 
-    setTimeout(() => {
-      const isTodayExist = productsHistory?.some(product => product.createdAt === currentDate);
-
-      if (!isTodayExist) {
-        const updateProducts = async () => {
-          for (const product of products) {
-            await updateProduct(product.id, { ...product, decrease: 0, increase: 0 });
-          }
-          await handleExportToHistory();
-        };
-        updateProducts();
-      }
-    }, 1000);
-  }, []);
+        if (!isTodayExist) {
+          const updateProducts = async () => {
+            for (const product of products) {
+              await updateProduct(product.id, { ...product, decrease: 0, increase: 0 });
+            }
+            await handleExportToHistory();
+          };
+          updateProducts();
+        }
+      }, 500);
+    }
+  }, [loadingProducts, loadingProductsHistory]);
 
 
 
