@@ -48,10 +48,7 @@ const useIndexedDB = (storeName) => {
                     data: [...prev.data, { ...item, id }],
                 }));
             } catch (err) {
-                setState((prev) => ({
-                    ...prev,
-                    error: err.message || "Error adding item",
-                }));
+                console.log(err?.message);
             }
         },
         [storeName]
@@ -68,10 +65,7 @@ const useIndexedDB = (storeName) => {
                     ),
                 }));
             } catch (err) {
-                setState((prev) => ({
-                    ...prev,
-                    error: err.message || "Error updating item",
-                }));
+                console.log(err?.message);
             }
         },
         [storeName]

@@ -141,7 +141,7 @@ const Products = () => {
       }
     }
   }, [loadingProducts, loadingProductsHistory, isUpdated]);
-  console.log(updatingHistory)
+
   return (
     <div className="p-4 bg-gray-50 dark:bg-gray-900">
       <h1 className="text-2xl mb-4 text-gray-800 dark:text-white">المنتجات</h1>
