@@ -42,18 +42,15 @@ const useIndexedDB = (storeName) => {
     const addItem = useCallback(
         async (item) => {
             try {
-                setState((prev) => ({ ...prev, loading: true }));
                 const id = await db[storeName].add(item);
                 setState((prev) => ({
                     ...prev,
                     data: [...prev.data, { ...item, id }],
-                    loading: false,
                 }));
             } catch (err) {
                 setState((prev) => ({
                     ...prev,
                     error: err.message || "Error adding item",
-                    loading: false,
                 }));
             }
         },
@@ -63,20 +60,17 @@ const useIndexedDB = (storeName) => {
     const updateItem = useCallback(
         async (id, item) => {
             try {
-                setState((prev) => ({ ...prev, loading: true }));
                 await db[storeName].update(id, item);
                 setState((prev) => ({
                     ...prev,
                     data: prev.data.map((i) =>
                         i.id === id ? { ...item, id } : i
                     ),
-                    loading: false,
                 }));
             } catch (err) {
                 setState((prev) => ({
                     ...prev,
                     error: err.message || "Error updating item",
-                    loading: false,
                 }));
             }
         },
@@ -86,19 +80,13 @@ const useIndexedDB = (storeName) => {
     const deleteItem = useCallback(
         async (id) => {
             try {
-                setState((prev) => ({ ...prev, loading: true }));
                 await db[storeName].delete(id);
                 setState((prev) => ({
                     ...prev,
                     data: prev.data.filter((i) => i.id !== id),
-                    loading: false,
                 }));
             } catch (err) {
-                setState((prev) => ({
-                    ...prev,
-                    error: err.message || "Error deleting item",
-                    loading: false,
-                }));
+                console.log(err?.message);
             }
         },
         [storeName]
@@ -141,25 +129,6 @@ const useIndexedDB = (storeName) => {
         }
     }, []);
 
-    const getUserRole = useCallback(async (username) => {
-        setState((prev) => ({ ...prev, loading: true }));
-        try {
-            const user = await db.users
-                .where("username")
-                .equals(username)
-                .first();
-            setState((prev) => ({ ...prev, loading: false }));
-            return user ? user.role : null;
-        } catch (err) {
-            setState((prev) => ({
-                ...prev,
-                error: err.message || "Error fetching user role",
-                loading: false,
-            }));
-            throw err;
-        }
-    }, []);
-
     const getProductHistoryForYesterday = useCallback(async (productId) => {
         try {
             const yesterday = format(subDays(new Date(), 1), "yyyy-MM-dd");
@@ -174,12 +143,7 @@ const useIndexedDB = (storeName) => {
                 .first();
             return productHistory || null;
         } catch (err) {
-            setState((prev) => ({
-                ...prev,
-                error: err.message || "Error fetching product history",
-                loading: false,
-            }));
-            throw err;
+            console.log(err?.message);
         }
     }, []);
 
@@ -193,7 +157,6 @@ const useIndexedDB = (storeName) => {
             deleteItem,
             registerUser,
             loginUser,
-            getUserRole,
             getProductHistoryForYesterday,
         }),
         [
@@ -203,7 +166,6 @@ const useIndexedDB = (storeName) => {
             deleteItem,
             registerUser,
             loginUser,
-            getUserRole,
             getProductHistoryForYesterday,
         ]
     );
