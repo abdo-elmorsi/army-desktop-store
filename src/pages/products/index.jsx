@@ -21,7 +21,7 @@ const Products = () => {
   const { data: units } = useIndexedDB('units');
   const { getProductHistoryForYesterday } = useIndexedDB();
 
-  const filteredProducts = useFilteredProducts(selectedStore);
+  const filteredProducts = useFilteredProducts(selectedStore, products, loadingProducts, getProductHistoryForYesterday);
 
   const handleDelete = useCallback(async (id) => {
     const confirmationMessage = 'هل انت متأكد من حذف هذا المنتج';

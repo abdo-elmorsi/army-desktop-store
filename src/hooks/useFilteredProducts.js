@@ -1,48 +1,55 @@
 import { useState, useEffect, useMemo } from "react";
-import { useIndexedDB } from "@/hooks";
 
-const useFilteredProducts = (selectedStore) => {
+const useFilteredProducts = (
+    selectedStore,
+    products,
+    loadingProducts,
+    getProductHistoryForYesterday
+) => {
     const [filteredProducts, setFilteredProducts] = useState([]);
-    const { data: products, loading: loadingProducts } =
-        useIndexedDB("products");
-    const { getProductHistoryForYesterday } = useIndexedDB();
 
     useEffect(() => {
-        if (loadingProducts) return;
+        if (loadingProducts || !products) return;
 
         const fetchFilteredProducts = async () => {
-            const new_filtered_products = selectedStore
-                ? products?.filter(
+            // Filter products based on selectedStore
+            const filtered = selectedStore
+                ? products.filter(
                       (product) => product.storeId === selectedStore
                   )
                 : products;
 
+            // Get quantities for each product
             const productsWithQty = await Promise.all(
-                new_filtered_products.map(async (pro) => {
+                filtered.map(async (product) => {
                     const lastItemBalance = await getProductHistoryForYesterday(
-                        pro?.id
+                        product.id
                     );
                     const qty =
-                        (+lastItemBalance?.qty || 0) +
-                        (+lastItemBalance?.increase || 0) -
-                        (+lastItemBalance?.decrease || 0);
+                        (lastItemBalance?.qty || 0) +
+                        (lastItemBalance?.increase || 0) -
+                        (lastItemBalance?.decrease || 0);
 
-                    return { ...pro, qty };
+                    return { ...product, qty };
                 })
             );
 
-            // Sort the products by storeId after all quantities have been calculated
+            // Sort products by storeId
             const sortedProducts = productsWithQty.sort(
                 (a, b) => a.storeId - b.storeId
             );
-
             setFilteredProducts(sortedProducts);
         };
 
         fetchFilteredProducts();
-    }, [loadingProducts, selectedStore, products]);
+    }, [
+        loadingProducts,
+        selectedStore,
+        products,
+        getProductHistoryForYesterday,
+    ]);
 
-    // Memoize the filtered products to prevent unnecessary re-renders
+    // Memoize the filtered products
     return useMemo(() => filteredProducts, [filteredProducts]);
 };
 
