@@ -19,6 +19,8 @@ contextBridge.exposeInMainWorld("ipcRenderer", {
         ipcRenderer.invoke("show-prompt", message, defaultValue),
 
     // print: () => ipcRenderer.send("print"), // Add this line for printing
+    getUsers: () => ipcRenderer.invoke('get-users'),
+    addItem: (itemName:any) => ipcRenderer.invoke('add-item', itemName),
 });
 
 // DOM Ready utility function

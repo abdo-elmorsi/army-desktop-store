@@ -50,6 +50,12 @@ const Sidebar = () => {
       icon: (isActive) =>  <MdSettings size={22} className={isActive ? "text-white":"text-primary hover:text-white"} />
 
     },
+    {
+      to: '/test',
+      label: 'db',
+      icon: (isActive) =>  <MdSettings size={22} className={isActive ? "text-white":"text-primary hover:text-white"} />
+
+    },
     // Add more links here as needed
   ];
 
