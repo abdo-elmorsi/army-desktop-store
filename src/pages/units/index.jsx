@@ -1,30 +1,29 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useIndexedDB } from '@/hooks';
-import { Button } from '@/components';
+import { useDatabase } from '@/hooks';
+import { Button, Error } from '@/components';
 
 const Units = () => {
-  const { data: units, deleteItem, loading } = useIndexedDB('units');
+  const { data: units, loading, error, deleteItem } = useDatabase('units');
   const navigate = useNavigate();
 
-  const handleDelete = async (id) => {
-    if (window.location.host.includes('vercel.app')) {
-      const result = window.confirm('هل انت متأكد من حذف وحدة القياس');
-      if (result) {
-        deleteItem(id);
-      }
-    } else {
-      const result = await window.ipcRenderer.showPrompt('هل انت متأكد من حذف وحدة القياس:', 'John Doe');
-      if (result) {
-        deleteItem(id);
-      }
+
+  const handleDelete = useCallback(async (id) => {
+    const confirmationMessage = 'هل انت متأكد من حذف وحدة القياس';
+    const isConfirmed = window.location.host.includes('vercel.app')
+      ? window.confirm(confirmationMessage)
+      : await window.ipcRenderer.showPrompt(confirmationMessage, 'John Doe');
+
+    if (isConfirmed) {
+      await deleteItem(id);
     }
-  };
+  }, [deleteItem]);
 
-  const handleEdit = (id) => {
-    navigate(`/units/edit/${id}`);
-  };
 
+
+  if (error) {
+    return <Error message={error} onRetry={() => window.location.reload()} />;
+  }
   return (
     <div className="p-4 bg-gray-50 dark:bg-gray-900">
       <h1 className="text-2xl mb-4 text-gray-800 dark:text-white">وحدات القياس</h1>
@@ -56,9 +55,8 @@ const Units = () => {
                 <td className="text-center p-4 text-gray-800 dark:text-gray-200">{unit.name}</td>
                 <td className="text-center p-4 text-gray-800 dark:text-gray-200">{unit.description}</td>
                 <td className="p-4 justify-center gap-2 flex">
-                  <Button onClick={() => handleEdit(unit.id)} className="bg-primary text-white">
-                    تعديل
-                  </Button>
+                  <Button onClick={() => navigate(`/units/edit/${unit.id}`)} className="bg-primary text-white">تعديل</Button>
+
                   <Button onClick={() => handleDelete(unit.id)} className="btn--red">
                     حذف
                   </Button>

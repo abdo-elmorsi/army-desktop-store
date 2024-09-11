@@ -3,34 +3,29 @@ import { useNavigate } from 'react-router-dom';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
 import { Input, Button } from '@/components';
-import { useInput, useIndexedDB } from '@/hooks';
+import { useInput, useDatabase } from '@/hooks';
 
 const SignUp = () => {
   const navigate = useNavigate();
-  const { registerUser,data, error } = useIndexedDB('users');
+  const { data: users, addItem, error } = useDatabase('users');
 
   const userName = useInput("", null);
   const password = useInput("", null);
   const [showPass, setShowPass] = useState(false);
-  const [isRegistered, setIsRegistered] = useState(false);
 
   const handleShowPass = () => setShowPass(!showPass);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    try {
-      await registerUser(userName.value, password.value, "admin");
-      setIsRegistered(true); // Set registered state to true
-    } catch (err) {
-      console.error('Registration error:', err);
-    }
+    await addItem([userName.value, password.value, "admin"]);
   };
 
   useEffect(() => {
-    if (isRegistered) {
-      navigate('/login'); // Navigate after registration
+    if (users.length) {
+      navigate('/login');
     }
-  }, [isRegistered, navigate]);
+  }, [users.length, navigate]);
+
 
   return (
     <div className='h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900'>

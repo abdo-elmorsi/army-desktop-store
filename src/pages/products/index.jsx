@@ -1,27 +1,27 @@
-import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useIndexedDB, useExportExcel, useFilteredProducts } from '@/hooks';
-import { Button } from '@/components';
-import { formatComma, getLabel, isExpiringSoon } from '@/utils';
-import { format } from 'date-fns';
-import { CgArrowUp } from 'react-icons/cg';
-import { FaDownload } from 'react-icons/fa';
+import { useDatabase, useExportExcel } from '@/hooks';
+import { Button, Error } from '@/components';
+import { formatComma, isExpiringSoon } from '@/utils';
 import { FaArrowTrendDown, FaArrowTrendUp } from 'react-icons/fa6';
+import { FaDownload } from 'react-icons/fa';
+import { format } from 'date-fns';
 
 const Products = () => {
-  const navigate = useNavigate();
-  const tableRef = useRef(null);
-  const [isUpdated, setIsUpdated] = useState(false);
-  const [updatingHistory, setUpdatingHistory] = useState(false)
+  const { data: notFormattedProducts, loading, error, deleteItem } = useDatabase('products');
+  const { data: stores, loading: loadingStores } = useDatabase('stores');
   const [selectedStore, setSelectedStore] = useState(null);
+  console.log(notFormattedProducts);
+  
+  const products = notFormattedProducts.filter(product => {
+    if (!selectedStore) {
+      return true;
+    }
+    return product.storeId === selectedStore;
+  });
 
-  const { data: products, loading: loadingProducts, updateItem: updateProduct, deleteItem: deleteItemFromProduct } = useIndexedDB('products');
-  const { data: productsHistory, loading: loadingProductsHistory, addItem: addItemToProductHistory, deleteItem: deleteItemFromHistory } = useIndexedDB('productsHistory');
-  const { data: stores, loading: loadingStores } = useIndexedDB('stores');
-  const { data: units } = useIndexedDB('units');
-  const { getProductHistoryForYesterday } = useIndexedDB();
 
-  const filteredProducts = useFilteredProducts(selectedStore, products, loadingProducts, getProductHistoryForYesterday);
+  const navigate = useNavigate();
 
   const handleDelete = useCallback(async (id) => {
     const confirmationMessage = 'هل انت متأكد من حذف هذا المنتج';
@@ -30,47 +30,18 @@ const Products = () => {
       : await window.ipcRenderer.showPrompt(confirmationMessage, 'John Doe');
 
     if (isConfirmed) {
-      deleteItemFromProduct(id);
+      await deleteItem(id);
     }
-  }, [deleteItemFromProduct]);
+  }, [deleteItem]);
 
-  const handleExportToHistory = useCallback(async (isNewDate = false) => {
-    try {
-      setUpdatingHistory(true);
-      const today = format(new Date(), "yyyy-MM-dd");
-      const newFilteredProducts = await Promise.all(products.map(async (product) => {
-        const lastItemBalance = await getProductHistoryForYesterday(product?.id);
-        return {
-          ...product,
-          qty: lastItemBalance ? (+lastItemBalance.qty + (+lastItemBalance.increase || 0) - (+lastItemBalance.decrease || 0)) : 0,
-          ...(isNewDate ? { increase: 0, decrease: 0 } : {}),
-        };
-      }));
 
-      const existingRecords = productsHistory.filter(record => record.createdAt === today);
-      await Promise.all(existingRecords.map(record => deleteItemFromHistory(record.id)));
 
-      const newProductHistory = newFilteredProducts.map(({ id, ...others }) => ({
-        ...others,
-        productId: id,
-        createdAt: today,
-      }));
-
-      if (newProductHistory.length > 0) {
-        await Promise.all(newProductHistory.map(newItem => addItemToProductHistory(newItem)));
-      }
-    } catch (error) {
-      console.error("Failed to export to history:", error);
-    } finally {
-      setUpdatingHistory(false);
-    }
-  }, [addItemToProductHistory, deleteItemFromHistory, products, productsHistory, getProductHistoryForYesterday]);
 
   const columns = useMemo(() => {
     return [
       { name: "الرقم التسلسلي", noExport: true, selector: (row, i) => `${i + 1}` },
       { name: "ألاسم", selector: row => row?.name },
-      { name: "المخزن", selector: row => getLabel(row?.storeId, stores) },
+      { name: "المخزن", selector: row => row.storeName },
       { name: "الرصيد قبل", selector: row => formatComma(row?.qty) },
       {
         name: "خصم واضافه", noExport: true,
@@ -93,7 +64,7 @@ const Products = () => {
         name: "الرصيد الفعلي",
         selector: row => formatComma(+row?.qty + (+row?.increase || 0) - (+row?.decrease || 0))
       },
-      { name: "وحده القياس", selector: row => getLabel(row?.unitId, units) },
+      // { name: "وحده القياس", selector: row => row.unitName },
       { name: "تاريخ الانتاج", selector: row => row?.createdDate },
       {
         name: "تاريخ الانتهاء",
@@ -103,57 +74,29 @@ const Products = () => {
       },
       { name: "الوصف", selector: row => row?.description },
     ];
-  }, [stores, units]);
+  }, []);
 
   const exportExcel = useCallback(async (name = 'المنتجات') => {
     try {
-      await useExportExcel(filteredProducts, columns, name, (error) => console.log(error));
+      await useExportExcel(products, columns, name, (error) => console.log(error));
     } catch (error) {
       console.log(error);
     }
-  }, [filteredProducts, columns]);
+  }, [products, columns]);
 
 
-  // to remove today history
-  // useEffect(() => {
-  //   productsHistory.forEach(element => {
-  //     if (element.createdAt === format(new Date(), "yyyy-MM-dd")) {
-  //       deleteItemFromHistory(element?.id);
-  //     } else {
-  //       return;
-  //     }
-  //   });
-  // }, [])
-
-  useEffect(() => {
-    if (!loadingProducts && !loadingProductsHistory && !isUpdated) {
-      const currentDate = format(new Date(), "yyyy-MM-dd");
-      const isTodayExist = productsHistory?.some(product => product.createdAt === currentDate);
-
-      if (!isTodayExist) {
-        setIsUpdated(true);
-        const updateProducts = async () => {
-          await Promise.all(products.map(product => updateProduct(product.id, { ...product, decrease: 0, increase: 0 })));
-          await handleExportToHistory(true);
-
-        };
-        updateProducts();
-      }
-    }
-  }, [loadingProducts, loadingProductsHistory, isUpdated]);
-
+  if (error) {
+    return <Error message={error} onRetry={() => window.location.reload()} />;
+  }
   return (
     <div className="p-4 bg-gray-50 dark:bg-gray-900">
       <h1 className="text-2xl mb-4 text-gray-800 dark:text-white">المنتجات</h1>
-      <div className='flex justify-between items-center mb-4'>
-        <Link to="/products/add" className="bg-primary text-white px-4 py-2 rounded hover:bg-hoverPrimary">
-          اضافه منتج
-        </Link>
-        <Button disabled={updatingHistory} onClick={() => handleExportToHistory()} className="bg-primary text-white flex items-center gap-2">
-          <span>حفظ تعديلات اليوم</span>
-          <CgArrowUp />
-        </Button>
-      </div>
+      <Link
+        to="/products/add"
+        className="bg-primary text-white px-4 py-2 rounded hover:bg-hoverPrimary mb-4 inline-block"
+      >
+        اضافه منتج
+      </Link>
 
       {loadingStores ? (
         <StoreSkeleton />
@@ -178,9 +121,8 @@ const Products = () => {
           <FaDownload />
         </Button>
       </div>
-
       <div className="overflow-auto" style={{ height: '55vh' }}>
-        <table ref={tableRef} className="w-full bg-white dark:bg-gray-800 shadow-md rounded border border-gray-200 dark:border-gray-700">
+        <table className="w-full bg-white dark:bg-gray-800 shadow-md rounded border border-gray-200 dark:border-gray-700">
           <thead className="bg-gray-100 dark:bg-gray-700 sticky top-0 z-10">
             <tr>
               {columns.filter(c => !c.noShow).map(column => (
@@ -190,12 +132,12 @@ const Products = () => {
             </tr>
           </thead>
           <tbody>
-            {(loadingProducts || loadingProductsHistory) ? (
+            {(loading) ? (
               Array.from({ length: 5 }).map((_, index) => (
                 <TableSkeleton columns={columns} key={index} />
               ))
             ) : (
-              filteredProducts.map((product, i) => (
+              products.map((product, i) => (
                 <tr key={product.id} className="border-t border-gray-200 dark:border-gray-700">
                   {columns.filter(c => !c.noShow).map(column => (
                     <td key={column.name} className="p-4 text-gray-800 dark:text-gray-200">{column.selector(product, i)}</td>
@@ -213,6 +155,10 @@ const Products = () => {
     </div>
   );
 };
+
+export default Products;
+
+
 
 const TableSkeleton = ({ columns }) => (
   <tr className="border-t border-gray-200 dark:border-gray-700">
@@ -237,5 +183,3 @@ const StoreSkeleton = () => (
     ))}
   </div>
 );
-
-export default Products;

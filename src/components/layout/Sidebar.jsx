@@ -51,8 +51,8 @@ const Sidebar = () => {
 
     },
     {
-      to: '/test',
-      label: 'db',
+      to: '/users',
+      label: 'Users',
       icon: (isActive) =>  <MdSettings size={22} className={isActive ? "text-white":"text-primary hover:text-white"} />
 
     },

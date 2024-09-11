@@ -2,16 +2,9 @@ import { app, BrowserWindow, shell, ipcMain, Menu, dialog } from "electron";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import os from "node:os";
-import { 
-    initializeDatabase, 
-    getUsers, 
-    addUser, 
-    updateUser, 
-    deleteUser, 
-    closeDatabase 
-} from "./db";
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+import DatabaseManager from "./db"; // Import the DatabaseManager class
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 process.env.APP_ROOT = path.join(__dirname, "../..");
 export const MAIN_DIST = path.join(process.env.APP_ROOT, "dist-electron");
@@ -31,7 +24,7 @@ if (!app.requestSingleInstanceLock()) {
 let win: BrowserWindow | null = null;
 const preload = path.join(__dirname, "../preload/index.mjs");
 const indexHtml = path.join(RENDERER_DIST, "index.html");
-const isProduction = true;
+const isProduction = false;
 
 async function createWindow() {
     win = new BrowserWindow({
@@ -54,7 +47,10 @@ async function createWindow() {
     }
 
     win.webContents.on("did-finish-load", () => {
-        win?.webContents.send("main-process-message", new Date().toLocaleString());
+        win?.webContents.send(
+            "main-process-message",
+            new Date().toLocaleString()
+        );
     });
 
     win.webContents.setWindowOpenHandler(({ url }) => {
@@ -97,28 +93,131 @@ function createMenu() {
 }
 
 app.whenReady().then(() => {
-    initializeDatabase();
+    DatabaseManager.initializeDatabase(); // Initialize the database
     createWindow();
     createMenu();
 
-    ipcMain.handle('get-users', async () => {
-        return getUsers();
+    // ********************Users********************
+    ipcMain.handle("get-users", async () => {
+        return DatabaseManager.getUsers();
     });
 
-    ipcMain.handle('add-user', async (_, username, password, role) => {
-        return addUser(username, password, role);
+    ipcMain.handle("add-users", async (_, username, password, role) => {
+        console.log(username, password, role);
+
+        return DatabaseManager.addUser(username, password, role);
     });
 
-    ipcMain.handle('update-user', async (_, id, username, password, role) => {
-        return updateUser(id, username, password, role);
+    ipcMain.handle("update-users", async (_, id, username, password, role) => {
+        return DatabaseManager.updateUser(id, username, password, role);
     });
 
-    ipcMain.handle('delete-user', async (_, id) => {
-        return deleteUser(id);
+    ipcMain.handle("delete-users", async (_, id) => {
+        return DatabaseManager.deleteUser(id);
     });
 
-    app.on('before-quit', () => {
-        closeDatabase();
+    // ********************Products********************
+
+    ipcMain.handle("get-products", async () => {
+        return DatabaseManager.getProducts();
+    });
+
+    ipcMain.handle(
+        "add-products",
+        async (
+            _,
+            name,
+            storeId,
+            qty,
+            increase,
+            decrease,
+            unitId,
+            createdDate,
+            expiryDate,
+            description
+        ) => {
+            return DatabaseManager.addProduct(
+                name,
+                storeId,
+                qty,
+                increase,
+                decrease,
+                unitId,
+                createdDate,
+                expiryDate,
+                description
+            );
+        }
+    );
+
+    ipcMain.handle(
+        "update-products",
+        async (
+            _,
+            id,
+            name,
+            storeId,
+            qty,
+            increase,
+            decrease,
+            unitId,
+            createdDate,
+            expiryDate,
+            description
+        ) => {
+            return DatabaseManager.updateProduct(
+                id,
+                name,
+                storeId,
+                qty,
+                increase,
+                decrease,
+                unitId,
+                createdDate,
+                expiryDate,
+                description
+            );
+        }
+    );
+
+    ipcMain.handle("delete-products", async (_, id) => {
+        return DatabaseManager.deleteProduct(id);
+    });
+
+    // ********************Stores********************
+
+    ipcMain.handle("get-stores", async () => {
+        return DatabaseManager.getStores();
+    });
+
+    ipcMain.handle("add-stores", async (_, name, description) => {
+        return DatabaseManager.addStore(name, description);
+    });
+
+    ipcMain.handle("update-stores", async (_, id, name, description) => {
+        return DatabaseManager.updateStore(id, name, description);
+    });
+
+    ipcMain.handle("delete-stores", async (_, id) => {
+        return DatabaseManager.deleteStore(id);
+    });
+
+    // ********************Units********************
+
+    ipcMain.handle("get-units", async () => {
+        return DatabaseManager.getUnits();
+    });
+
+    ipcMain.handle("add-units", async (_, name, description) => {
+        return DatabaseManager.addUnit(name, description);
+    });
+
+    ipcMain.handle("update-units", async (_, id, name, description) => {
+        return DatabaseManager.updateUnit(id, name, description);
+    });
+
+    ipcMain.handle("delete-units", async (_, id) => {
+        return DatabaseManager.deleteUnit(id);
     });
 
     ipcMain.handle("show-prompt", async (_, message) => {
@@ -130,7 +229,11 @@ app.whenReady().then(() => {
             message: message,
         });
 
-        return response === 1 ? (checkboxChecked ? "Remembered Value" : "OK Value") : null;
+        return response === 1
+            ? checkboxChecked
+                ? "Remembered Value"
+                : "OK Value"
+            : null;
     });
 });
 
@@ -171,5 +274,5 @@ ipcMain.handle("open-win", (_, arg) => {
 });
 
 app.on("before-quit", () => {
-    closeDatabase();
+    DatabaseManager.closeDatabase(); // Close the database
 });

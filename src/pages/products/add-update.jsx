@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { useSelect, useIndexedDB, useInput } from '@/hooks';
+import { useSelect, useDatabase, useInput } from '@/hooks';
 import { formatComma } from '@/utils';
 import { Select, Button, Input, CustomDatePicker } from '@/components';
 import { format } from 'date-fns';
@@ -9,11 +9,12 @@ const ProductsForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const { data: products, addItem, loading: loadingProducts, updateItem } = useIndexedDB('products');
-  const { getProductHistoryForYesterday } = useIndexedDB();
+  const { data: products, addItem, loading: loadingProducts, updateItem } = useDatabase('products');
 
-  const { data: stores, loading: loadingStores } = useIndexedDB('stores');
-  const { data: units, loading: loadingUnits } = useIndexedDB('units');
+  const { data: stores, loading: loadingStores } = useDatabase('stores');
+  const { data: units, loading: loadingUnits } = useDatabase('units');
+
+
   const name = useInput("", null);
   const storeId = useSelect("", null);
   const qty = useInput("", "number", true);
@@ -28,48 +29,50 @@ const ProductsForm = () => {
 
 
   useEffect(() => {
-    if (id && !loadingProducts && !loadingStores && !loadingUnits) {
+    if (id && !loadingProducts) {
       (async () => {
         const product = products?.find((products) => products.id === parseInt(id)) || null;
 
 
-        const lastItemBalance = await getProductHistoryForYesterday(id);
+        const lastItemBalance = 100
 
         if (product) {
           name.changeValue(product.name)
-          storeId.changeValue(stores.find(s => s.id === product?.storeId))
+          storeId.changeValue({ name: product.storeName, id: product.storeId })
           qty.changeValue((+lastItemBalance?.qty + (+lastItemBalance?.increase || 0) - (+lastItemBalance?.decrease || 0) || 0) || 0)
           increase.changeValue(product?.increase)
           decrease.changeValue(product?.decrease)
-          unitId.changeValue(units.find(u => u.id === product?.unitId))
+          unitId.changeValue({ name: product.unitName, id: product.unitId })
           product.createdDate && setCreatedDate(product.createdDate)
           product.expiryDate && setExpiryDate(product.expiryDate)
           description.changeValue(product.description)
         }
       })()
     }
-  }, [id, loadingProducts, loadingStores, loadingUnits]);
+  }, [id, loadingProducts]);
 
 
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const obj = {
-      name: name.value,
-      storeId: storeId.value?.id || null,
-      qty: +qty.value || 0,
-      increase: +increase.value || 0,
-      decrease: +decrease.value || 0,
-      unitId: unitId.value?.id || null,
-      createdDate: createdDate ? format(createdDate, "yyyy-MM-dd") : null,
-      expiryDate: expiryDate ? format(expiryDate, "yyyy-MM-dd") : null,
-      description: description.value
-    }
-    if (id) {
 
-      updateItem(parseInt(id), obj);
+    const data = [
+      name.value,
+      storeId.value?.id || null,
+      +qty.value || 0,
+      +increase.value || 0,
+      +decrease.value || 0,
+      unitId.value?.id || null,
+      createdDate ? format(createdDate,
+        "yyyy-MM-dd") : null,
+      expiryDate ? format(expiryDate, "yyyy-MM-dd") : null,
+      description.value
+    ]
+
+    if (id) {
+      await updateItem(parseInt(id), data);
     } else {
-      addItem(obj);
+      await addItem(data);
     }
     navigate('/products');
   };
@@ -112,7 +115,7 @@ const ProductsForm = () => {
           </li>
           <li className="mx-2">/</li>
           <li className={id ? 'text-gray-800 dark:text-white' : 'text-gray-700 dark:text-gray-300'}>
-            {id ? 'تعديل' : 'أضافه'}
+            {id ? 'تعديل' : 'أضافه'}s
           </li>
         </ul>
       </nav>
@@ -225,7 +228,8 @@ const ProductsForm = () => {
             !storeId.value?.id ||
             !unitId.value?.id ||
             !createdDate ||
-            !expiryDate
+            !expiryDate ||
+            loadingProducts
           } onClick={handleSubmit}>
             حفظ
           </Button>

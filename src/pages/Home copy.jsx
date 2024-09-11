@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useSavedState, useDatabase } from '@/hooks';
-import { Button, CustomDatePicker, Error } from '@/components';
-import { formatComma, getDateDifference, getMinDateInArray, isExpiringSoon } from '@/utils';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useSavedState, useIndexedDB } from '@/hooks';
+import { Button, CustomDatePicker } from '@/components';
+import { formatComma, getLabel, getDateDifference, getMinDateInArray, isExpiringSoon } from '@/utils';
 import { Link } from 'react-router-dom';
 import { FaEye } from 'react-icons/fa';
 import { BiArrowFromRight } from 'react-icons/bi';
@@ -9,8 +9,9 @@ import { format } from 'date-fns';
 import { FaArrowTrendDown, FaArrowTrendUp } from 'react-icons/fa6';
 
 const Home = ({ view = false }) => {
-  const { data: notFormattedProducts, loadingProducts, errorProducts, deleteItem } = useDatabase('products');
-  const { data: stores, loading: loadingStores, error: errorStores } = useDatabase('stores');
+  const { data: stores, loading: loadingStores } = useIndexedDB('stores');
+  const { data: productsHistory, loading: loadingProductsHistory } = useIndexedDB('productsHistory');
+  const { data: units } = useIndexedDB('units');
   const [selectedStore, setSelectedStore] = useState(null);
   const [timer, setTimer] = useSavedState(20, "timer");
   const [selectedDate, setSelectedDate] = useSavedState(format(new Date(), "yyyy-MM-dd"), 'selected-date');
@@ -44,16 +45,16 @@ const Home = ({ view = false }) => {
     startInterval();
   }, [startInterval]);
 
-  const products = notFormattedProducts.filter(product => {
-    if (!selectedStore) {
-      return true;
-    }
-    return product.storeId === selectedStore;
-  });
+  const filteredProducts = useMemo(() => {
+    return (productsHistory?.filter(product =>
+      product.storeId === selectedStore && product.createdAt === format(selectedDate || new Date(), 'yyyy-MM-dd')
+    ) || []).map(new_product => ({
+      ...new_product,
+      qty: (+new_product?.qty + (+new_product?.increase || 0) - (+new_product?.decrease || 0)) || 0,
+    }));
+  }, [productsHistory, selectedDate, selectedStore]);
 
-  if (errorProducts || errorStores) {
-    return <Error message={errorProducts || errorStores} onRetry={() => window.location.reload()} />;
-  }
+
   return (
     <div className="p-4 bg-gray-50 dark:bg-gray-900">
       <header className="flex justify-between items-center mb-4">
@@ -75,13 +76,12 @@ const Home = ({ view = false }) => {
         )}
         <div className='flex items-center gap-10'>
           {!view && (
-            <></>
-            // <CustomDatePicker
-            //   minDate={getMinDateInArray(productsHistory, "createdAt")}
-            //   maxDate={new Date()}
-            //   value={selectedDate || new Date()}
-            //   onChange={setSelectedDate}
-            // />
+            <CustomDatePicker
+              minDate={getMinDateInArray(productsHistory, "createdAt")}
+              maxDate={new Date()}
+              value={selectedDate || new Date()}
+              onChange={setSelectedDate}
+            />
           )}
           <Link to={view ? "/" : "/view"}>
             <Button className="btn--primary flex items-center gap-4">
@@ -119,16 +119,16 @@ const Home = ({ view = false }) => {
               ))}
             </tr>
           </thead>
-          {loadingProducts ? (
+          {loadingProductsHistory ? (
             <TableSkeleton />
           ) : (
             <tbody>
-              {products.map((product, i) => (
+              {filteredProducts.map((product, i) => (
                 <tr key={product.id} className={`border-t ${i % 2 === 0 ? 'bg-gray-100 dark:bg-gray-700' : 'bg-white dark:bg-gray-800'}`}>
                   <td className="text-center p-4 text-gray-800 dark:text-gray-200">{i + 1}</td>
                   <td className="font-bold text-center p-4 text-gray-950 dark:text-gray-50">{product.name}</td>
                   <td className="text-center p-4 text-gray-950 dark:text-gray-50 flex flex-col gap-2">
-                    <span>{`${formatComma(+product?.qty + (+product?.increase || 0) - (+product?.decrease || 0))} (${product.unitName})`}</span>
+                    <span>{`${formatComma(product.qty)} (${getLabel(product.unitId, units)})`}</span>
                     <div className='flex justify-between items-center'>
                       <p className='text-green-500 flex gap-2 m-0 items-center justify-center'>
                         <FaArrowTrendUp />

@@ -4,7 +4,7 @@ import { Layout, Progress } from '@/components';
 
 // Lazy load the pages
 const Home = lazy(() => import('@/pages/Home'));
-const Test = lazy(() => import('@/pages/test'));
+const Users = lazy(() => import('@/pages/users'));
 const Products = lazy(() => import('@/pages/products'));
 const Stores = lazy(() => import('@/pages/stores'));
 const Units = lazy(() => import('@/pages/units'));
@@ -32,7 +32,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Layout><Home /></Layout>} />
           <Route path="/view" element={<Home view={true} />} />
-          <Route path="/test" element={<Test  />} />
+          <Route path="/users" element={<Layout><Users /></Layout>} />
 
           <Route path="/products" element={<Layout><Products /></Layout>} />
           <Route path="/products/add" element={<Layout><ProductsForm /></Layout>} />
