@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { useSavedState, useIndexedDB } from '@/hooks';
+import { useSavedState, useIndexedDB, useLocalStorageUser } from '@/hooks';
 import { Button, CustomDatePicker } from '@/components';
 import { formatComma, getLabel, getDateDifference, getMinDateInArray, isExpiringSoon } from '@/utils';
 import { Link } from 'react-router-dom';
@@ -9,6 +9,8 @@ import { format } from 'date-fns';
 import { FaArrowTrendDown, FaArrowTrendUp } from 'react-icons/fa6';
 
 const Home = ({ view = false }) => {
+  const { user } = useLocalStorageUser();
+
   const { data: stores, loading: loadingStores } = useIndexedDB('stores');
   const { data: productsHistory, loading: loadingProductsHistory } = useIndexedDB('productsHistory');
   const { data: units } = useIndexedDB('units');
@@ -83,7 +85,7 @@ const Home = ({ view = false }) => {
               onChange={setSelectedDate}
             />
           )}
-          <Link to={view ? "/" : "/view"}>
+          <Link to={view ? `/login?username=${user?.username || ""}` : "/view"}>
             <Button className="btn--primary flex items-center gap-4">
               <span>{view ? "الاعدادات" : "العرض"}</span>
               {view ? <BiArrowFromRight className="cursor-pointer text-white" size={22} /> : <FaEye className="cursor-pointer text-white" size={22} />}
