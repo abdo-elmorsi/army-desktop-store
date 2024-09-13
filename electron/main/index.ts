@@ -103,8 +103,6 @@ app.whenReady().then(() => {
     });
 
     ipcMain.handle("add-users", async (_, username, password, role) => {
-        console.log(username, password, role);
-
         return DatabaseManager.addUser(username, password, role);
     });
 
@@ -118,8 +116,11 @@ app.whenReady().then(() => {
 
     // ********************Products********************
 
-    ipcMain.handle("get-products", async () => {
-        return DatabaseManager.getProducts();
+    ipcMain.handle("get-products", async (_, endDate?: string) => {
+        return DatabaseManager.getProducts(endDate);
+    });
+    ipcMain.handle("get-products-by-id", async (_, productId) => {
+        return DatabaseManager.getProductById(productId);
     });
 
     ipcMain.handle(
@@ -128,9 +129,6 @@ app.whenReady().then(() => {
             _,
             name,
             storeId,
-            qty,
-            increase,
-            decrease,
             unitId,
             createdDate,
             expiryDate,
@@ -139,9 +137,6 @@ app.whenReady().then(() => {
             return DatabaseManager.addProduct(
                 name,
                 storeId,
-                qty,
-                increase,
-                decrease,
                 unitId,
                 createdDate,
                 expiryDate,
@@ -157,9 +152,6 @@ app.whenReady().then(() => {
             id,
             name,
             storeId,
-            qty,
-            increase,
-            decrease,
             unitId,
             createdDate,
             expiryDate,
@@ -169,9 +161,6 @@ app.whenReady().then(() => {
                 id,
                 name,
                 storeId,
-                qty,
-                increase,
-                decrease,
                 unitId,
                 createdDate,
                 expiryDate,
@@ -182,6 +171,36 @@ app.whenReady().then(() => {
 
     ipcMain.handle("delete-products", async (_, id) => {
         return DatabaseManager.deleteProduct(id);
+    });
+
+    // ********************Transactions********************
+    ipcMain.handle(
+        "get-transactions",
+        async (_, productId?: number, startDate?: string) => {
+            return DatabaseManager.getTransactions(productId, startDate);
+        }
+    );
+
+    ipcMain.handle(
+        "add-transactions",
+        async (_, productId: number, increase: number, decrease: number) => {
+            return DatabaseManager.addTransaction(
+                productId,
+                increase,
+                decrease
+            );
+        }
+    );
+
+    ipcMain.handle(
+        "update-transactions",
+        async (_, id: number, increase: number, decrease: number) => {
+            return DatabaseManager.updateTransaction(id, increase, decrease);
+        }
+    );
+
+    ipcMain.handle("delete-transactions", async (_, id: number) => {
+        return DatabaseManager.deleteTransaction(id);
     });
 
     // ********************Stores********************

@@ -1,48 +1,31 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useSavedState, useDatabase } from '@/hooks';
+import React, { useEffect } from 'react';
+import { useSavedState, useDatabase, useStoreSwipe } from '@/hooks';
 import { Button, CustomDatePicker, Error } from '@/components';
-import { formatComma, getDateDifference, getMinDateInArray, isExpiringSoon } from '@/utils';
+import { formatComma, getDateDifference, isExpiringSoon } from '@/utils';
 import { Link } from 'react-router-dom';
-import { FaEye } from 'react-icons/fa';
+import { FaBalanceScale, FaEye } from 'react-icons/fa';
 import { BiArrowFromRight } from 'react-icons/bi';
 import { format } from 'date-fns';
-import { FaArrowTrendDown, FaArrowTrendUp } from 'react-icons/fa6';
 
 const Home = ({ view = false }) => {
-  const { data: notFormattedProducts, loadingProducts, errorProducts, deleteItem } = useDatabase('products');
-  const { data: stores, loading: loadingStores, error: errorStores } = useDatabase('stores');
-  const [selectedStore, setSelectedStore] = useState(null);
-  const [timer, setTimer] = useSavedState(20, "timer");
   const [selectedDate, setSelectedDate] = useSavedState(format(new Date(), "yyyy-MM-dd"), 'selected-date');
-  const intervalRef = useRef(null);
+  const { fetchData, data: notFormattedProducts, loadingProducts, errorProducts } = useDatabase('products', null, [new Date(selectedDate)]);
+
+  const { data: stores, loading: loadingStores, error: errorStores } = useDatabase('stores');
+
 
   useEffect(() => {
-    if (stores?.length) {
-      setSelectedStore(stores[0].id);
-      startInterval();
+    if (!loadingProducts) {
+      fetchData(null, [new Date(selectedDate)])
     }
-    return () => clearInterval(intervalRef.current);
-  }, [stores, timer]);
 
-  const swipeStores = useCallback(() => {
-    if (stores?.length) {
-      setSelectedStore((prevStoreId) => {
-        const currentIndex = stores.findIndex(store => store.id === prevStoreId);
-        return stores[(currentIndex + 1) % stores.length].id;
-      });
-    }
-  }, [stores]);
-
-  const startInterval = useCallback(() => {
-    clearInterval(intervalRef.current);
-    intervalRef.current = setInterval(swipeStores, (timer || 5) * 1000);
-  }, [timer, swipeStores]);
+  }, [selectedDate, loadingProducts])
 
 
-  const handleStoreClick = useCallback((storeId) => {
-    setSelectedStore(storeId);
-    startInterval();
-  }, [startInterval]);
+
+  const [timer, _] = useSavedState(20, "timer");
+  const { selectedStore, handleStoreClick } = useStoreSwipe(stores, timer);
+
 
   const products = notFormattedProducts.filter(product => {
     if (!selectedStore) {
@@ -75,13 +58,14 @@ const Home = ({ view = false }) => {
         )}
         <div className='flex items-center gap-10'>
           {!view && (
-            <></>
-            // <CustomDatePicker
-            //   minDate={getMinDateInArray(productsHistory, "createdAt")}
-            //   maxDate={new Date()}
-            //   value={selectedDate || new Date()}
-            //   onChange={setSelectedDate}
-            // />
+            <CustomDatePicker
+              // minDate={getMinDateInArray(productsHistory, "createdAt")}
+              maxDate={new Date()}
+              value={selectedDate || new Date()}
+              onChange={value => {
+                setSelectedDate(value ? value : new Date())
+              }}
+            />
           )}
           <Link to={view ? "/" : "/view"}>
             <Button className="btn--primary flex items-center gap-4">
@@ -124,21 +108,14 @@ const Home = ({ view = false }) => {
           ) : (
             <tbody>
               {products.map((product, i) => (
-                <tr key={product.id} className={`border-t ${i % 2 === 0 ? 'bg-gray-100 dark:bg-gray-700' : 'bg-white dark:bg-gray-800'}`}>
+                <tr key={product.id} className={`${i % 2 === 0 ? 'bg-gray-100 dark:bg-gray-700' : 'bg-white dark:bg-gray-800'}`}>
                   <td className="text-center p-4 text-gray-800 dark:text-gray-200">{i + 1}</td>
                   <td className="font-bold text-center p-4 text-gray-950 dark:text-gray-50">{product.name}</td>
-                  <td className="text-center p-4 text-gray-950 dark:text-gray-50 flex flex-col gap-2">
-                    <span>{`${formatComma(+product?.qty + (+product?.increase || 0) - (+product?.decrease || 0))} (${product.unitName})`}</span>
-                    <div className='flex justify-between items-center'>
-                      <p className='text-green-500 flex gap-2 m-0 items-center justify-center'>
-                        <FaArrowTrendUp />
-                        <span>{formatComma(product.increase)}</span>
-                      </p>
-                      <p className='text-red-500 flex gap-2 m-0 items-center justify-center'>
-                        <FaArrowTrendDown />
-                        <span>{formatComma(product.decrease)}</span>
-                      </p>
-                    </div>
+                  <td className={`flex justify-center items-center gap-2 p-4 font-bold ${product?.balance > 0 ? 'text-green-500' : 'text-red-500'}`}>
+                    <FaBalanceScale />
+                    <span>
+                      {formatComma(product?.balance || 0)} ({product.unitName})
+                    </span>
                   </td>
                   <td className="text-center p-4 text-gray-800 dark:text-gray-200">{product.createdDate}</td>
                   <td className={`text-center p-4 ${isExpiringSoon(product.expiryDate) ? 'text-red-600' : 'text-gray-800 dark:text-gray-200'}`}>

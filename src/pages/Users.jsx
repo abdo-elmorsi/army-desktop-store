@@ -96,7 +96,7 @@ export default function Users() {
                         ))
                     ) : (
                         users.map((user, i) => (
-                            <tr key={user.id} className="border-t border-gray-200 dark:border-gray-700">
+                            <tr key={user.id}>
                                 <td className="text-center p-4 text-gray-800 dark:text-gray-200">{i + 1}</td>
                                 <td className="text-center p-4 text-gray-800 dark:text-gray-200">{user.username}</td>
                                 <td className="text-center p-4 text-gray-800 dark:text-gray-200">{user.role}</td>
@@ -127,7 +127,7 @@ export default function Users() {
 }
 
 const TableSkeleton = () => {
-    return <tr className="border-t border-gray-200 dark:border-gray-700">
+    return <tr>
         <td className="p-4 text-center">
             <div className="animate-pulse bg-gray-300 rounded h-8 w-12 mx-auto"></div>
         </td>

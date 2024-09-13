@@ -2,23 +2,21 @@ import path from "node:path";
 import betterSqlite3 from "better-sqlite3";
 import { fileURLToPath } from "node:url";
 import { app } from "electron";
+import { format, subDays } from "date-fns";
 
 interface Result {
     lastInsertRowid: number;
 }
+
 class DatabaseManager {
     private static db: betterSqlite3.Database | null = null;
 
     private static getDatabasePath(): string {
         const __filename = fileURLToPath(import.meta.url);
         const __dirname = path.dirname(__filename);
-        if (app.isPackaged) {
-            // In production, use userData directory
-            return path.join(app.getPath("userData"), "databases/database.db");
-        } else {
-            // In development, use the current directory
-            return path.join(__dirname, "database.db");
-        }
+        return app.isPackaged
+            ? path.join(app.getPath("userData"), "databases/database.db")
+            : path.join(__dirname, "../../src/db/database.db");
     }
 
     public static initializeDatabase(): void {
@@ -28,57 +26,71 @@ class DatabaseManager {
             console.log("Connected to the database.");
 
             // Create tables if they do not exist
-            this.db.exec(`CREATE TABLE IF NOT EXISTS users (
+            this.createTables();
+        } catch (err) {
+            console.error("Could not open database:", err);
+        }
+    }
+
+    private static createTables(): void {
+        const queries = [
+            `CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 username TEXT NOT NULL,
                 password TEXT NOT NULL,
                 role TEXT NOT NULL
-            )`);
-
-            this.db.exec(`CREATE TABLE IF NOT EXISTS products (
+            )`,
+            `CREATE TABLE IF NOT EXISTS products (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
                 storeId INTEGER,
-                qty INTEGER NOT NULL DEFAULT 0,
-                increase INTEGER NOT NULL DEFAULT 0,
-                decrease INTEGER NOT NULL DEFAULT 0,
                 unitId INTEGER,
                 createdDate TEXT,
                 expiryDate TEXT,
                 description TEXT,
-                FOREIGN KEY (storeId) REFERENCES stores(id) ON DELETE CASCADE ON UPDATE CASCADE,
-                FOREIGN KEY (unitId) REFERENCES units(id) ON DELETE CASCADE ON UPDATE CASCADE
-            )`);
-
-            this.db.exec(`CREATE TABLE IF NOT EXISTS stores (
+                FOREIGN KEY (storeId) REFERENCES stores(id),
+                FOREIGN KEY (unitId) REFERENCES units(id)
+            )`,
+            `CREATE TABLE IF NOT EXISTS transactions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                productId INTEGER NOT NULL,
+                increase INTEGER NOT NULL DEFAULT 0,
+                decrease INTEGER NOT NULL DEFAULT 0,
+                createdAt TEXT NOT NULL,
+                FOREIGN KEY (productId) REFERENCES products(id)
+            )`,
+            `CREATE TABLE IF NOT EXISTS stores (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
                 description TEXT NOT NULL
-            )`);
-
-            this.db.exec(`CREATE TABLE IF NOT EXISTS units (
+            )`,
+            `CREATE TABLE IF NOT EXISTS units (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
                 description TEXT NOT NULL
-            )`);
+            )`,
+        ];
+
+        queries.forEach((query) => {
+            this.db?.exec(query);
+        });
+    }
+
+    private static prepareStatement(
+        query: string
+    ): betterSqlite3.Statement | undefined {
+        try {
+            return this.db?.prepare(query);
         } catch (err) {
-            console.error("Could not open database", err);
+            console.error("Error preparing statement:", err);
+            throw err;
         }
     }
 
-    // ********************Users********************
+    // ******************** Users ********************
     public static getUsers(): any[] {
-        try {
-            // Start with the base query
-            let query = "SELECT * FROM users";
-
-            // Execute the query
-            const rows = this.db?.prepare(query).all();
-            return rows || [];
-        } catch (err) {
-            console.error("Error retrieving users:", err);
-            throw err;
-        }
+        const query = "SELECT * FROM users";
+        return this.executeQuery(query);
     }
 
     public static addUser(
@@ -86,20 +98,11 @@ class DatabaseManager {
         password: string,
         role: string
     ): { id?: number; username: string; role: string } {
-        try {
-            const stmt = this.db?.prepare(
-                "INSERT INTO users (username, password, role) VALUES (?, ?, ?)"
-            );
-            const result = stmt?.run(username, password, role) as Result;
-            return {
-                id: result?.lastInsertRowid,
-                username,
-                role,
-            };
-        } catch (err) {
-            console.error("Error adding user:", err);
-            throw err;
-        }
+        const stmt = this.prepareStatement(
+            "INSERT INTO users (username, password, role) VALUES (?, ?, ?)"
+        );
+        const result = stmt?.run(username, password, role) as Result;
+        return { id: result?.lastInsertRowid, username, role };
     }
 
     public static updateUser(
@@ -108,66 +111,95 @@ class DatabaseManager {
         password: string,
         role: string
     ): { id: number; username: string; role: string } {
-        try {
-            const stmt = this.db?.prepare(
-                "UPDATE users SET username = ?, password = ?, role = ? WHERE id = ?"
-            );
-            stmt?.run(username, password, role, id);
-            return { id, username, role };
-        } catch (err) {
-            console.error("Error updating user:", err);
-            throw err;
-        }
+        const stmt = this.prepareStatement(
+            "UPDATE users SET username = ?, password = ?, role = ? WHERE id = ?"
+        );
+        stmt?.run(username, password, role, id);
+        return { id, username, role };
     }
 
     public static deleteUser(id: number): { success: boolean } {
-        try {
-            const stmt = this.db?.prepare("DELETE FROM users WHERE id = ?");
-            stmt?.run(id);
-            return { success: true };
-        } catch (err) {
-            console.error("Error deleting user:", err);
-            throw err;
-        }
+        const stmt = this.prepareStatement("DELETE FROM users WHERE id = ?");
+        stmt?.run(id);
+        return { success: true };
     }
 
-    // ********************Products********************
-    public static getProducts(): any[] {
-        try {
-            // Base query with joins
-            let query = `
-                SELECT 
-                    products.*, 
-                    stores.name AS storeName, 
-                    units.name AS unitName
-                FROM 
-                    products
-                LEFT JOIN 
-                    stores ON products.storeId = stores.id
-                LEFT JOIN 
-                    units ON products.unitId = units.id
-            `;
+    // ******************** Products ********************
+    public static async getProducts(endDate?: string): Promise<any[]> {
+        const baseQuery = `
+            SELECT 
+                products.*, 
+                stores.name AS storeName, 
+                units.name AS unitName
+            FROM 
+                products
+            LEFT JOIN 
+                stores ON products.storeId = stores.id
+            LEFT JOIN 
+                units ON products.unitId = units.id
+        `;
 
-            // Prepare and execute the query
-            const statement = this.db?.prepare(query);
-            if (!statement) {
-                throw new Error("Database statement preparation failed");
+        const statement = this.prepareStatement(baseQuery);
+        if (!statement) return [];
+
+        let rows = statement.all();
+
+        const getTransactionsForProduct = async (productId: number) => {
+            try {
+                const transactions = await this.getTransactions(
+                    productId,
+                    endDate
+                );
+                const totalIncrease = transactions.reduce(
+                    (sum, tx) => sum + (tx.increase || 0),
+                    0
+                );
+                const totalDecrease = transactions.reduce(
+                    (sum, tx) => sum + (tx.decrease || 0),
+                    0
+                );
+                return totalIncrease - totalDecrease;
+            } catch (error) {
+                console.error(
+                    `Error fetching transactions for product ${productId}:`,
+                    error
+                );
+                return 0;
             }
+        };
 
-            const rows = statement.all();
-            return rows || [];
-        } catch (err) {
-            console.error("Error retrieving products:", err);
-            throw err;
-        }
+        const productsWithBalances = await Promise.all(
+            rows.map(async (product: any) => {
+                const balance = await getTransactionsForProduct(product.id);
+                return { ...product, balance };
+            })
+        );
+
+        return productsWithBalances;
+    }
+
+    public static getProductById(productId: number): any {
+        const query = `
+            SELECT 
+                products.*, 
+                stores.name AS storeName, 
+                units.name AS unitName
+            FROM 
+                products
+            LEFT JOIN 
+                stores ON products.storeId = stores.id
+            LEFT JOIN 
+                units ON products.unitId = units.id
+            WHERE 
+                products.id = ?
+        `;
+        const stmt = this.prepareStatement(query);
+        return stmt?.get(productId) || null;
     }
 
     public static addProduct(
         name: string,
         storeId: number | null,
-        qty: number,
-        increase: number,
-        decrease: number,
         unitId: number | null,
         createdDate: string | null,
         expiryDate: string | null,
@@ -176,58 +208,37 @@ class DatabaseManager {
         id?: number;
         name: string;
         storeId: number | null;
-        qty: number;
-        increase: number;
-        decrease: number;
         unitId: number | null;
         createdDate: string | null;
         expiryDate: string | null;
         description: string;
     } {
-        try {
-            const stmt = this.db?.prepare(
-                `INSERT INTO products (name, storeId, qty, increase, decrease, unitId, createdDate, expiryDate, description)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
-            );
-            const result = stmt?.run(
-                name,
-                storeId ?? null,
-                qty,
-                increase,
-                decrease,
-                unitId ?? null,
-                createdDate ?? null,
-                expiryDate ?? null,
-                description
-            ) as Result;
-
-            const productId = result?.lastInsertRowid;
-
-            return {
-                id: productId,
-                name,
-                storeId,
-                qty,
-                increase,
-                decrease,
-                unitId,
-                createdDate,
-                expiryDate,
-                description,
-            };
-        } catch (err) {
-            console.error("Error adding product:", err);
-            throw err;
-        }
+        const stmt = this.prepareStatement(
+            `INSERT INTO products (name, storeId, unitId, createdDate, expiryDate, description) VALUES (?, ?, ?, ?, ?, ?)`
+        );
+        const result = stmt?.run(
+            name,
+            storeId ?? null,
+            unitId ?? null,
+            createdDate ?? null,
+            expiryDate ?? null,
+            description
+        ) as Result;
+        return {
+            id: result?.lastInsertRowid,
+            name,
+            storeId,
+            unitId,
+            createdDate,
+            expiryDate,
+            description,
+        };
     }
 
     public static updateProduct(
         id: number,
         name: string,
         storeId: number | null,
-        qty: number,
-        increase: number,
-        decrease: number,
         unitId: number | null,
         createdDate: string | null,
         expiryDate: string | null,
@@ -236,97 +247,150 @@ class DatabaseManager {
         id: number;
         name: string;
         storeId: number | null;
-        qty: number;
-        increase: number;
-        decrease: number;
         unitId: number | null;
         createdDate: string | null;
         expiryDate: string | null;
         description: string;
     } {
-        try {
-            const stmt = this.db?.prepare(
-                `UPDATE products SET name = ?, storeId = ?, qty = ?, increase = ?, decrease = ?, unitId = ?, createdDate = ?, expiryDate = ?, description = ?
-                 WHERE id = ?`
-            );
-            stmt?.run(
-                name,
-                storeId ?? null,
-                qty,
-                increase,
-                decrease,
-                unitId ?? null,
-                createdDate ?? null,
-                expiryDate ?? null,
-                description,
-                id
-            );
-
-            return {
-                id,
-                name,
-                storeId,
-                qty,
-                increase,
-                decrease,
-                unitId,
-                createdDate,
-                expiryDate,
-                description,
-            };
-        } catch (err) {
-            console.error("Error updating product:", err);
-            throw err;
-        }
+        const stmt = this.prepareStatement(
+            `UPDATE products SET name = ?, storeId = ?, unitId = ?, createdDate = ?, expiryDate = ?, description = ? WHERE id = ?`
+        );
+        stmt?.run(
+            name,
+            storeId ?? null,
+            unitId ?? null,
+            createdDate ?? null,
+            expiryDate ?? null,
+            description,
+            id
+        );
+        return {
+            id,
+            name,
+            storeId,
+            unitId,
+            createdDate,
+            expiryDate,
+            description,
+        };
     }
 
     public static deleteProduct(id: number): { success: boolean } {
-        try {
-            // First, delete the product from the products table
-            const deleteProductStmt = this.db?.prepare(
-                "DELETE FROM products WHERE id = ?"
-            );
-            deleteProductStmt?.run(id);
-
-            return { success: true };
-        } catch (err) {
-            console.error("Error deleting product:", err);
-            throw err;
-        }
+        const stmt = this.prepareStatement("DELETE FROM products WHERE id = ?");
+        stmt?.run(id);
+        return { success: true };
     }
 
-    // ********************Stores********************
-    public static getStores(): any[] {
-        try {
-            const rows = this.db?.prepare("SELECT * FROM stores").all();
-            return rows || [];
-        } catch (err) {
-            console.error("Error retrieving stores:", err);
-            throw err;
+    // ******************** Transactions ********************
+    public static async getTransactions(
+        productId?: number,
+        endDate?: string
+    ): Promise<any[]> {
+        // Format endDate if provided
+        endDate = endDate ? format(new Date(endDate), "yyyy-MM-dd") : undefined;
+
+        // Base query to fetch transactions and join with product names
+        let query = `
+            SELECT 
+                transactions.*, 
+                products.name AS productName 
+            FROM 
+                transactions
+            LEFT JOIN 
+                products ON transactions.productId = products.id
+        `;
+        const conditions: string[] = [];
+        const params: any[] = [];
+
+        // Add productId filter if provided
+        if (productId) {
+            conditions.push("transactions.productId = ?");
+            params.push(productId);
         }
+
+        // If endDate is provided, fetch all transactions until this date
+        if (endDate) {
+            conditions.push("transactions.createdAt <= ?");
+            params.push(endDate);
+        }
+
+        // Append conditions to the query if there are any
+        if (conditions.length) {
+            query += ` WHERE ${conditions.join(" AND ")}`;
+        }
+
+        // Sort transactions by createdAt date in descending order (latest first)
+        query += " ORDER BY transactions.createdAt DESC";
+
+        // Prepare and execute the SQL statement
+        const stmt = this.prepareStatement(query);
+        return stmt?.all(...params) || [];
+    }
+
+    public static addTransaction(
+        productId: number,
+        increase: number,
+        decrease: number
+    ): { id?: number; productId: number; increase: number; decrease: number } {
+        const createdAt = format(new Date(), "yyyy-MM-dd");
+        // const createdAt = format(subDays(new Date(), 1), "yyyy-MM-dd");
+
+        const stmt = this.prepareStatement(
+            "INSERT INTO transactions (productId, increase, decrease, createdAt) VALUES (?, ?, ?, ?)"
+        );
+        const result = stmt?.run(
+            productId,
+            increase,
+            decrease,
+            createdAt
+        ) as Result;
+        return {
+            id: result?.lastInsertRowid,
+            productId,
+            increase,
+            decrease,
+        };
+    }
+
+    public static updateTransaction(
+        id: number,
+        increase: number,
+        decrease: number
+    ): {
+        id: number;
+        increase: number;
+        decrease: number;
+    } {
+        const stmt = this.prepareStatement(
+            "UPDATE transactions SET  increase = ?, decrease = ? WHERE id = ?"
+        );
+        stmt?.run(increase, decrease, id);
+        return { id, increase, decrease };
+    }
+
+    public static deleteTransaction(id: number): { success: boolean } {
+        const stmt = this.prepareStatement(
+            "DELETE FROM transactions WHERE id = ?"
+        );
+        stmt?.run(id);
+        return { success: true };
+    }
+
+    // ******************** Stores ********************
+    public static getStores(): any[] {
+        const query = "SELECT * FROM stores";
+        return this.executeQuery(query);
     }
 
     public static addStore(
         name: string,
         description: string
     ): { id?: number; name: string; description: string } {
-        try {
-            const stmt = this.db?.prepare(
-                "INSERT INTO stores (name, description) VALUES (?, ?)"
-            );
-            const result = stmt?.run(name, description);
-            return {
-                id:
-                    result?.lastInsertRowid !== undefined
-                        ? Number(result.lastInsertRowid)
-                        : 0,
-                name,
-                description,
-            };
-        } catch (err) {
-            console.error("Error adding store:", err);
-            throw err;
-        }
+        const stmt = this.prepareStatement(
+            "INSERT INTO stores (name, description) VALUES (?, ?)"
+        );
+        const result = stmt?.run(name, description) as Result;
+        return { id: result?.lastInsertRowid, name, description };
     }
 
     public static updateStore(
@@ -334,84 +398,34 @@ class DatabaseManager {
         name: string,
         description: string
     ): { id: number; name: string; description: string } {
-        try {
-            const stmt = this.db?.prepare(
-                "UPDATE stores SET name = ?, description = ? WHERE id = ?"
-            );
-            stmt?.run(name, description, id);
-            return { id, name, description };
-        } catch (err) {
-            console.error("Error updating store:", err);
-            throw err;
-        }
+        const stmt = this.prepareStatement(
+            "UPDATE stores SET name = ?, description = ? WHERE id = ?"
+        );
+        stmt?.run(name, description, id);
+        return { id, name, description };
     }
 
     public static deleteStore(id: number): { success: boolean } {
-        try {
-            // Ensure the database is initialized before running queries
-            if (!this.db) {
-                throw new Error("Database not initialized");
-            }
-
-            // Prepare statement to check the count of products associated with the store
-            const countStmt = this.db.prepare(
-                "SELECT COUNT(*) as count FROM products WHERE storeId = ?"
-            );
-
-            // Run the query and get the count of associated products
-            const result = countStmt.get(id) as { count: number };
-
-            // Check if there are any products associated with the store
-            if (result.count > 0) {
-                throw new Error(
-                    "Cannot delete store because it has associated products."
-                );
-            }
-
-            // Prepare and run the delete statement for the store
-            const stmt = this.db.prepare("DELETE FROM stores WHERE id = ?");
-            stmt.run(id);
-
-            // Return success if deletion is successful
-            return { success: true };
-        } catch (err) {
-            console.error("Error deleting store:", err);
-            throw err;
-        }
+        const stmt = this.prepareStatement("DELETE FROM stores WHERE id = ?");
+        stmt?.run(id);
+        return { success: true };
     }
 
-    // ********************Units********************
+    // ******************** Units ********************
     public static getUnits(): any[] {
-        try {
-            const rows = this.db?.prepare("SELECT * FROM units").all();
-            return rows || [];
-        } catch (err) {
-            console.error("Error retrieving units:", err);
-            throw err;
-        }
+        const query = "SELECT * FROM units";
+        return this.executeQuery(query);
     }
 
     public static addUnit(
         name: string,
         description: string
     ): { id?: number; name: string; description: string } {
-        try {
-            const stmt = this.db?.prepare(
-                "INSERT INTO units (name, description) VALUES (?, ?)"
-            );
-            const result = stmt?.run(name, description);
-            return {
-                id:
-                    result?.lastInsertRowid !== undefined
-                        ? Number(result.lastInsertRowid)
-                        : 0,
-                name,
-                description,
-            };
-        } catch (err) {
-            console.error("Error adding unit:", err);
-            throw err;
-        }
+        const stmt = this.prepareStatement(
+            "INSERT INTO units (name, description) VALUES (?, ?)"
+        );
+        const result = stmt?.run(name, description) as Result;
+        return { id: result?.lastInsertRowid, name, description };
     }
 
     public static updateUnit(
@@ -419,48 +433,25 @@ class DatabaseManager {
         name: string,
         description: string
     ): { id: number; name: string; description: string } {
-        try {
-            const stmt = this.db?.prepare(
-                "UPDATE units SET name = ?, description = ? WHERE id = ?"
-            );
-            stmt?.run(name, description, id);
-            return { id, name, description };
-        } catch (err) {
-            console.error("Error updating unit:", err);
-            throw err;
-        }
+        const stmt = this.prepareStatement(
+            "UPDATE units SET name = ?, description = ? WHERE id = ?"
+        );
+        stmt?.run(name, description, id);
+        return { id, name, description };
     }
 
     public static deleteUnit(id: number): { success: boolean } {
+        const stmt = this.prepareStatement("DELETE FROM units WHERE id = ?");
+        stmt?.run(id);
+        return { success: true };
+    }
+
+    private static executeQuery(query: string): any[] {
         try {
-            // Ensure the database is initialized before running queries
-            if (!this.db) {
-                throw new Error("Database not initialized");
-            }
-
-            // Prepare statement to check the count of products associated with the store
-            const countStmt = this.db.prepare(
-                "SELECT COUNT(*) as count FROM products WHERE unitId = ?"
-            );
-
-            // Run the query and get the count of associated products
-            const result = countStmt.get(id) as { count: number };
-
-            // Check if there are any products associated with the store
-            if (result.count > 0) {
-                throw new Error(
-                    "Cannot delete unit because it has associated products."
-                );
-            }
-
-            // Prepare and run the delete statement for the store
-            const stmt = this.db.prepare("DELETE FROM units WHERE id = ?");
-            stmt.run(id);
-
-            // Return success if deletion is successful
-            return { success: true };
+            const rows = this.db?.prepare(query).all();
+            return rows || [];
         } catch (err) {
-            console.error("Error deleting store:", err);
+            console.error("Error executing query:", err);
             throw err;
         }
     }

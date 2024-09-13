@@ -6,13 +6,15 @@ import { Layout, Progress } from '@/components';
 const Home = lazy(() => import('@/pages/Home'));
 const Users = lazy(() => import('@/pages/users'));
 const Products = lazy(() => import('@/pages/products'));
+const ProductsForm = lazy(() => import('@/pages/products/add-update'));
+const TransactionsHistory = lazy(() => import('@/pages/products/transactions'));
+const ProductsTransactionsForm = lazy(() => import('@/pages/products/transactions/add-update'));
 const Stores = lazy(() => import('@/pages/stores'));
 const Units = lazy(() => import('@/pages/units'));
 const Settings = lazy(() => import('@/pages/Settings'));
 const SignUp = lazy(() => import('@/pages/SignUp'));
 const Login = lazy(() => import('@/pages/Login'));
 const NotFound = lazy(() => import('@/pages/NotFound'));
-const ProductsForm = lazy(() => import('@/pages/products/add-update'));
 const StoreForm = lazy(() => import('@/pages/stores/add-update'));
 const UnitForm = lazy(() => import('@/pages/units/add-update'));
 
@@ -37,6 +39,9 @@ function App() {
           <Route path="/products" element={<Layout><Products /></Layout>} />
           <Route path="/products/add" element={<Layout><ProductsForm /></Layout>} />
           <Route path="/products/edit/:id" element={<Layout><ProductsForm /></Layout>} />
+          <Route path="/transactions/:id" element={<Layout><TransactionsHistory /></Layout>} />
+          <Route path="/transactions/add" element={<Layout><ProductsTransactionsForm /></Layout>} />
+          <Route path="/transactions/edit/:id" element={<Layout><ProductsTransactionsForm /></Layout>} />
 
           <Route path="/stores" element={<Layout><Stores /></Layout>} />
           <Route path="/stores/add" element={<Layout><StoreForm /></Layout>} />

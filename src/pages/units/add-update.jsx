@@ -61,7 +61,7 @@ const UnitsForm = () => {
       <nav className="text-gray-700 dark:text-gray-300 mb-4">
         <ul className="list-reset flex">
           <li>
-            <Link to="/units" className="text-blue-500 dark:text-blue-400 hover:underline">
+            <Link to="/units" className="text-primary hover:underline">
               وحدات القياس
             </Link>
           </li>

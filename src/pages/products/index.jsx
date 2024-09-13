@@ -1,27 +1,30 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDatabase, useExportExcel } from '@/hooks';
-import { Button, Error } from '@/components';
+import { Button, Error, Select } from '@/components';
 import { formatComma, isExpiringSoon } from '@/utils';
-import { FaArrowTrendDown, FaArrowTrendUp } from 'react-icons/fa6';
-import { FaDownload } from 'react-icons/fa';
+import { FaBalanceScale, FaDownload } from 'react-icons/fa';
 import { format } from 'date-fns';
+const options = [
+  { value: 'view', label: 'عرض الحركات' },
+  { value: 'editBalance', label: 'تعديل الرصيد' },
+  { value: 'edit', label: 'تعديل' },
+  { value: 'delete', label: 'حذف' },
+];
 
 const Products = () => {
+  const navigate = useNavigate();
   const { data: notFormattedProducts, loading, error, deleteItem } = useDatabase('products');
   const { data: stores, loading: loadingStores } = useDatabase('stores');
   const [selectedStore, setSelectedStore] = useState(null);
-  console.log(notFormattedProducts);
-  
-  const products = notFormattedProducts.filter(product => {
-    if (!selectedStore) {
-      return true;
-    }
-    return product.storeId === selectedStore;
-  });
-
-
-  const navigate = useNavigate();
+  const products = useMemo(() => {
+    return notFormattedProducts.filter(product => {
+      if (!selectedStore) {
+        return true;
+      }
+      return product.storeId === selectedStore;
+    })
+  }, [selectedStore, notFormattedProducts])
 
   const handleDelete = useCallback(async (id) => {
     const confirmationMessage = 'هل انت متأكد من حذف هذا المنتج';
@@ -42,29 +45,14 @@ const Products = () => {
       { name: "الرقم التسلسلي", noExport: true, selector: (row, i) => `${i + 1}` },
       { name: "ألاسم", selector: row => row?.name },
       { name: "المخزن", selector: row => row.storeName },
-      { name: "الرصيد قبل", selector: row => formatComma(row?.qty) },
       {
-        name: "خصم واضافه", noExport: true,
-        selector: row => (
-          <div className='flex flex-col gap-2'>
-            <p className='text-red-500 flex gap-2 m-0 items-center justify-center'>
-              <FaArrowTrendDown />
-              <span>{formatComma(row?.decrease)}</span>
-            </p>
-            <p className='text-green-500 flex gap-2 m-0 items-center justify-center'>
-              <FaArrowTrendUp />
-              <span>{formatComma(row?.increase)}</span>
-            </p>
-          </div>
-        )
+        name: "الرصيد", selector: row => <div className={`flex justify-center items-center gap-2 text-gray-950 font-bold ${row?.balance > 0 ? 'text-green-500' : 'text-red-500'}`}>
+          <FaBalanceScale />
+          <span>
+            {formatComma(row?.balance || 0)} ({row.unitName})
+          </span>
+        </div>
       },
-      { name: "خصم", noShow: true, getValue: row => parseFloat(row?.decrease) },
-      { name: "اضافه", noShow: true, getValue: row => parseFloat(row?.increase) },
-      {
-        name: "الرصيد الفعلي",
-        selector: row => formatComma(+row?.qty + (+row?.increase || 0) - (+row?.decrease || 0))
-      },
-      // { name: "وحده القياس", selector: row => row.unitName },
       { name: "تاريخ الانتاج", selector: row => row?.createdDate },
       {
         name: "تاريخ الانتهاء",
@@ -88,6 +76,19 @@ const Products = () => {
   if (error) {
     return <Error message={error} onRetry={() => window.location.reload()} />;
   }
+
+  const handleSelectChange = (selectedOption, product) => {
+    const action = selectedOption.value;
+    if (action === "view") {
+      navigate(`/transactions/${product.id}`);
+    } else if (action === "editBalance") {
+      navigate(`/transactions/add?product-id=${product.id}`);
+    } else if (action === "edit") {
+      navigate(`/products/edit/${product.id}`);
+    } else if (action === "delete") {
+      handleDelete(product.id);
+    }
+  };
   return (
     <div className="p-4 bg-gray-50 dark:bg-gray-900">
       <h1 className="text-2xl mb-4 text-gray-800 dark:text-white">المنتجات</h1>
@@ -121,9 +122,9 @@ const Products = () => {
           <FaDownload />
         </Button>
       </div>
-      <div className="overflow-auto" style={{ height: '55vh' }}>
+      <div className="overflow-auto" style={{ height: '60vh' }}>
         <table className="w-full bg-white dark:bg-gray-800 shadow-md rounded border border-gray-200 dark:border-gray-700">
-          <thead className="bg-gray-100 dark:bg-gray-700 sticky top-0 z-10">
+          <thead className="bg-gray-300 dark:bg-gray-800 sticky top-0 z-10">
             <tr>
               {columns.filter(c => !c.noShow).map(column => (
                 <th key={column.name} className="p-4 text-gray-800 dark:text-gray-300">{column.name}</th>
@@ -138,14 +139,47 @@ const Products = () => {
               ))
             ) : (
               products.map((product, i) => (
-                <tr key={product.id} className="border-t border-gray-200 dark:border-gray-700">
+                <tr key={product.id} className={`${i % 2 === 0 ? 'bg-gray-100 dark:bg-gray-700' : 'bg-white dark:bg-gray-800'}`}>
                   {columns.filter(c => !c.noShow).map(column => (
                     <td key={column.name} className="p-4 text-gray-800 dark:text-gray-200">{column.selector(product, i)}</td>
                   ))}
-                  <td className="p-4 flex justify-center gap-2">
-                    <Button onClick={() => navigate(`/products/edit/${product.id}`)} className="bg-primary text-white">تعديل</Button>
-                    <Button onClick={() => handleDelete(product.id)} className="btn--red">حذف</Button>
+                  <td className="p-2">
+                    <div className="relative">
+                      <Select
+                        value={""}
+                        onChange={(value) => handleSelectChange(value, product)}
+                        placeholder="اختيار إجراء"
+                        options={options}
+                      />
+                    </div>
                   </td>
+                  {/* <td className="p-2 flex flex-col gap-2">
+                    <div className='flex justify-start gap-2'>
+                      <Button onClick={() => navigate(`/transactions/${product.id}`)} className="px-2 py-1 bg-primary text-white flex items-center gap-2">
+                        <FaEye />
+                        <span>
+                          عرض الحركات
+                        </span>
+                      </Button>
+                      <Button onClick={() => navigate(`/transactions/add?product-id=${product.id}`)} className="px-2 py-1 bg-primary text-white flex items-center gap-2">
+
+                        <BiEdit />
+                        <span>
+                          تعديل الرصيد
+                        </span>
+                      </Button>
+                    </div>
+                    <div className='flex justify-start gap-2'>
+                      <Button disabled={loading} onClick={() => navigate(`/products/edit/${product.id}`)} className="px-2 py-1 bg-primary text-white flex items-center gap-2">
+                        <BiEdit />
+                        <span>تعديل</span>
+                      </Button>
+                      <Button disabled={loading} onClick={() => handleDelete(product.id)} className="px-2 py-1 btn--red flex items-center gap-2">
+                        <BiTrash />
+                        <span>حذف</span>
+                      </Button>
+                    </div>
+                  </td> */}
                 </tr>
               ))
             )}
@@ -161,7 +195,7 @@ export default Products;
 
 
 const TableSkeleton = ({ columns }) => (
-  <tr className="border-t border-gray-200 dark:border-gray-700">
+  <tr>
     {columns.filter(c => !c.noShow).map((_, index) => (
       <td key={index} className="p-4 text-center">
         <div className="animate-pulse bg-gray-300 rounded h-8 mx-auto"></div>

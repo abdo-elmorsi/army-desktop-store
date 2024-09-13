@@ -10,7 +10,7 @@ const Login = () => {
   const [showPass, setShowPass] = useState(false);
   const navigate = useNavigate();
 
-  const { loading, addItem, data: users } = useDatabase('users');
+  const { loading, data: users } = useDatabase('users');
 
   const handleShowPass = () => setShowPass(!showPass);
 

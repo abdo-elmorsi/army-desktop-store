@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
@@ -7,7 +7,7 @@ import { useInput, useDatabase } from '@/hooks';
 
 const SignUp = () => {
   const navigate = useNavigate();
-  const { data: users, addItem, error } = useDatabase('users');
+  const { addItem, error } = useDatabase('users');
 
   const userName = useInput("", null);
   const password = useInput("", null);
@@ -18,13 +18,9 @@ const SignUp = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     await addItem([userName.value, password.value, "admin"]);
+    navigate('/login');
   };
 
-  useEffect(() => {
-    if (users.length) {
-      navigate('/login');
-    }
-  }, [users.length, navigate]);
 
 
   return (

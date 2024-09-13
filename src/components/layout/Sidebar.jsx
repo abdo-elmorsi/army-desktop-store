@@ -6,6 +6,7 @@ import { AiOutlineProduct } from 'react-icons/ai';
 import { MdOutlineBalance, MdOutlineStorefront, MdSettings } from 'react-icons/md';
 import { FaArrowRight, FaHome } from 'react-icons/fa';
 import { FcSettings } from 'react-icons/fc';
+import { BiUser, BiUserPlus, BiUserX } from 'react-icons/bi';
 // import { FaArrowRightFromBracket } from 'react-icons/fa6';
 
 const Sidebar = () => {
@@ -23,39 +24,39 @@ const Sidebar = () => {
     {
       to: '/',
       label: 'القائمه الرئيسيه',
-      icon: (isActive) =>  <FaHome size={22} className={isActive ? "text-white":"text-primary hover:text-white"} />
+      icon: (isActive) => <FaHome size={22} className={isActive ? "text-white" : "text-primary hover:text-white"} />
 
     },
     {
       to: '/products',
       label: 'المنتجات',
-      icon: (isActive) =>  <AiOutlineProduct size={22} className={isActive ? "text-white":"text-primary hover:text-white"} />
+      icon: (isActive) => <AiOutlineProduct size={22} className={isActive ? "text-white" : "text-primary hover:text-white"} />
 
     },
     {
       to: '/stores',
       label: 'المخازن',
-      icon: (isActive) =>  <MdOutlineStorefront size={22} className={isActive ? "text-white":"text-primary hover:text-white"} />
+      icon: (isActive) => <MdOutlineStorefront size={22} className={isActive ? "text-white" : "text-primary hover:text-white"} />
 
     },
     {
       to: '/units',
       label: 'وحدات القياس',
-      icon: (isActive) =>  <MdOutlineBalance size={22} className={isActive ? "text-white":"text-primary hover:text-white"} />
+      icon: (isActive) => <MdOutlineBalance size={22} className={isActive ? "text-white" : "text-primary hover:text-white"} />
 
     },
     {
       to: '/settings',
       label: 'الاعدادات',
-      icon: (isActive) =>  <MdSettings size={22} className={isActive ? "text-white":"text-primary hover:text-white"} />
+      icon: (isActive) => <MdSettings size={22} className={isActive ? "text-white" : "text-primary hover:text-white"} />
 
     },
-    {
-      to: '/users',
-      label: 'Users',
-      icon: (isActive) =>  <MdSettings size={22} className={isActive ? "text-white":"text-primary hover:text-white"} />
+    // {
+    //   to: '/users',
+    //   label: 'المستخدمين',
+    //   icon: (isActive) =>  <BiUserPlus size={22} className={isActive ? "text-white":"text-primary hover:text-white"} />
 
-    },
+    // },
     // Add more links here as needed
   ];
 
@@ -88,7 +89,7 @@ const Sidebar = () => {
       </div>
 
       {/* User Info and Logout */}
-      <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+      <div className="p-4">
         {isAuthenticated && !isLoading && (
           <div>
             <Button
