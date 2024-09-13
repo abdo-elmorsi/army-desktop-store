@@ -24,7 +24,7 @@ if (!app.requestSingleInstanceLock()) {
 let win: BrowserWindow | null = null;
 const preload = path.join(__dirname, "../preload/index.mjs");
 const indexHtml = path.join(RENDERER_DIST, "index.html");
-const isProduction = false;
+const isProduction = true;
 
 async function createWindow() {
     win = new BrowserWindow({
