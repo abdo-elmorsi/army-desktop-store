@@ -2,7 +2,7 @@ import path from "node:path";
 import betterSqlite3 from "better-sqlite3";
 import { fileURLToPath } from "node:url";
 import { app } from "electron";
-import { format, subDays } from "date-fns";
+import { format } from "date-fns";
 
 interface Result {
     lastInsertRowid: number;
