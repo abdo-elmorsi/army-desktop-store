@@ -10,7 +10,7 @@ const Units = () => {
   const { data: units, loading, error, deleteItem } = useDatabase('units');
 
   const handleDelete = useCallback(async (id) => {
-    const product = products.find(product => product.storeId == id);
+    const product = products.find(product => product.unitId == id);
     if (product) {
       alert('لا يمكن الحذف لانه يوجد منتج مرتبط به');
       return;

@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useSavedState, useDatabase, useStoreSwipe } from '@/hooks';
+import { useSavedState, useDatabase, useStoreSwipe, useLocalStorageUser } from '@/hooks';
 import { Button, CustomDatePicker, Error } from '@/components';
 import { formatComma, getDateDifference, isExpiringSoon } from '@/utils';
 import { Link } from 'react-router-dom';
@@ -8,6 +8,8 @@ import { BiArrowFromRight } from 'react-icons/bi';
 import { format } from 'date-fns';
 
 const Home = ({ view = false }) => {
+  const { user } = useLocalStorageUser();
+
   const [selectedDate, setSelectedDate] = useSavedState(format(new Date(), "yyyy-MM-dd"), 'selected-date');
   const { fetchData, data: notFormattedProducts, loadingProducts, errorProducts } = useDatabase('products', null, [new Date(selectedDate)]);
 
@@ -67,7 +69,7 @@ const Home = ({ view = false }) => {
               }}
             />
           )}
-          <Link to={view ? "/" : "/view"}>
+          <Link to={view ? `/login?username=${user?.username || ""}` : "/view"}>
             <Button className="btn--primary flex items-center gap-4">
               <span>{view ? "الاعدادات" : "العرض"}</span>
               {view ? <BiArrowFromRight className="cursor-pointer text-white" size={22} /> : <FaEye className="cursor-pointer text-white" size={22} />}

@@ -1,14 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Input, Button } from '@/components';
 import { useInput, useDatabase } from '@/hooks';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
 const Login = () => {
-  const userName = useInput("", null);
+
+  const location = useLocation();
+  const navigate = useNavigate();
+  const queryParams = new URLSearchParams(location.search);
+  const userName = useInput(queryParams.get('username') || "", null);
+
   const password = useInput("", null);
   const [showPass, setShowPass] = useState(false);
-  const navigate = useNavigate();
 
   const { loading, data: users, error } = useDatabase('users');
 
