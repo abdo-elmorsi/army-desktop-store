@@ -24,7 +24,7 @@ if (!app.requestSingleInstanceLock()) {
 let win: BrowserWindow | null = null;
 const preload = path.join(__dirname, "../preload/index.mjs");
 const indexHtml = path.join(RENDERER_DIST, "index.html");
-const isProduction = true;
+const isProduction = false;
 
 async function createWindow() {
     win = new BrowserWindow({
@@ -176,10 +176,27 @@ app.whenReady().then(() => {
     // ********************Transactions********************
     ipcMain.handle(
         "get-transactions",
-        async (_, productId?: number, startDate?: string) => {
-            return DatabaseManager.getTransactions(productId, startDate);
+        async (
+            _,
+            productId?: number,
+            startDate?: string,
+            searchDate?: string,
+            limit?: number,
+            offset?: number
+        ) => {
+            return DatabaseManager.getTransactions(
+                productId,
+                startDate,
+                searchDate,
+                limit,
+                offset
+            );
         }
     );
+
+    ipcMain.handle("get-transactions-by-id", async (_, transactionId) => {
+        return DatabaseManager.getTransactionById(transactionId);
+    });
 
     ipcMain.handle(
         "add-transactions",

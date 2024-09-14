@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
@@ -7,7 +7,7 @@ import { useInput, useDatabase } from '@/hooks';
 
 const SignUp = () => {
   const navigate = useNavigate();
-  const { addItem, error } = useDatabase('users');
+  const { addItem, loading, data: users, error } = useDatabase('users');
 
   const userName = useInput("", null);
   const password = useInput("", null);
@@ -22,6 +22,11 @@ const SignUp = () => {
   };
 
 
+  useEffect(() => {
+    if (!loading && users.length) {
+      navigate('/login')
+    }
+  }, [loading, users.length, navigate])
 
   return (
     <div className='h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900'>

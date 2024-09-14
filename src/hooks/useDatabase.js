@@ -15,6 +15,7 @@ const useDatabase = (storeName, id = null, queryParams = []) => {
             const method = id ? `get-${storeName}-by-id` : `get-${storeName}`;
             const args = id ? [id] : queryParams;
 
+            console.log(args);
             try {
                 const result = await window.ipcRenderer.invoke(method, ...args);
                 setState({ data: result, error: null, loading: false });
@@ -44,7 +45,7 @@ const useDatabase = (storeName, id = null, queryParams = []) => {
                     ...args
                 );
                 if (action === "delete") {
-                    await fetchData(); // Refresh data after delete action
+                    await fetchData(id, queryParams); // Refresh data after delete action with current parameters
                 }
             } catch (err) {
                 setState({
@@ -56,7 +57,7 @@ const useDatabase = (storeName, id = null, queryParams = []) => {
                 setState((prev) => ({ ...prev, loading: false }));
             }
         },
-        [fetchData, storeName, state]
+        [fetchData, storeName, id, queryParams]
     );
 
     const addItem = useCallback(
@@ -83,7 +84,7 @@ const useDatabase = (storeName, id = null, queryParams = []) => {
             updateItem,
             deleteItem,
         }),
-        [state, addItem, updateItem, deleteItem]
+        [state, fetchData, addItem, updateItem, deleteItem]
     );
 
     return value;

@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { formatComma } from '@/utils';
 import { useDatabase, useInput } from '@/hooks';
 import { Button, Input } from '@/components';
 
@@ -10,8 +11,8 @@ const ProductsBalanceForm = () => {
   const queryParams = new URLSearchParams(location.search);
   const productId = queryParams.get('product-id') || ""
 
-  const { data: transactions, addItem, loading, updateItem } = useDatabase('transactions');
-  const transaction = transactions?.find((transaction) => transaction.id === parseInt(id)) || null;
+  const { data: transaction, addItem, loading, updateItem } = useDatabase('transactions', parseInt(id));
+
   const { data: product } = useDatabase('products', productId);
 
   const increase = useInput("", "number", true);
@@ -84,7 +85,7 @@ const ProductsBalanceForm = () => {
           <li className={id ? 'text-gray-800 dark:text-white' : 'text-gray-700 dark:text-gray-300'}>
             <Link to={`/transactions/${productId}`} className="text-primary hover:underline">
               الحركات
-              (<span className='text-primary'>{id ? transaction.productName : product?.name || ""}</span>)
+              (<span className='text-primary'>{product?.name || ""}</span>)
             </Link>
           </li>
           <li className="mx-2">/</li>
@@ -95,6 +96,7 @@ const ProductsBalanceForm = () => {
       </nav>
 
       <form className='mt-10'>
+        <p className={`text-primary`}>الرصيد الحالي: {formatComma(product.balance)}</p>
         <div className='flex justify-between items-center flex-wrap gap-6'>
           <div className="mb-4 w-5/12">
             <Input

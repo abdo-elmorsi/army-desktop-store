@@ -4,8 +4,48 @@ import { fileURLToPath } from "node:url";
 import { app } from "electron";
 import { format } from "date-fns";
 
+interface User {
+    id?: number;
+    username: string;
+    password: string;
+    role: string | null;
+}
+interface Product {
+    id?: number;
+    name: string;
+    storeId: number | null;
+    unitId: number | null;
+    createdDate: string | null;
+    expiryDate: string | null;
+    description: string;
+    balance?: number;
+}
+
+interface Transaction {
+    id?: number;
+    productId: number;
+    increase: number;
+    decrease: number;
+    createdAt: string;
+}
+
+interface Store {
+    id?: number;
+    name: string;
+    description: string | null;
+}
+interface Unit {
+    id?: number;
+    name: string;
+    description: string | null;
+}
+
 interface Result {
     lastInsertRowid: number;
+}
+
+interface TotalResult {
+    totalCount: number;
 }
 
 class DatabaseManager {
@@ -83,12 +123,34 @@ class DatabaseManager {
             return this.db?.prepare(query);
         } catch (err) {
             console.error("Error preparing statement:", err);
-            throw err;
+            return undefined;
         }
     }
 
+    public static async getTransactionsForProduct(
+        productId: number,
+        endDate: string | undefined
+    ): Promise<{ increase: number; decrease: number; balance: number } | null> {
+        const transactions = await this.getTransactions(productId, endDate);
+        if (!transactions) return null;
+        const totalIncrease = transactions.data.reduce(
+            (sum, tx) => sum + (tx.increase || 0),
+            0
+        );
+        const totalDecrease = transactions.data.reduce(
+            (sum, tx) => sum + (tx.decrease || 0),
+            0
+        );
+
+        return {
+            increase: totalIncrease,
+            decrease: totalDecrease,
+            balance: totalIncrease - totalDecrease,
+        };
+    }
+
     // ******************** Users ********************
-    public static getUsers(): any[] {
+    public static getUsers(): User[] {
         const query = "SELECT * FROM users";
         return this.executeQuery(query);
     }
@@ -125,7 +187,7 @@ class DatabaseManager {
     }
 
     // ******************** Products ********************
-    public static async getProducts(endDate?: string): Promise<any[]> {
+    public static async getProducts(endDate?: string): Promise<Product[]> {
         const baseQuery = `
             SELECT 
                 products.*, 
@@ -144,41 +206,22 @@ class DatabaseManager {
 
         let rows = statement.all();
 
-        const getTransactionsForProduct = async (productId: number) => {
-            try {
-                const transactions = await this.getTransactions(
-                    productId,
-                    endDate
-                );
-                const totalIncrease = transactions.reduce(
-                    (sum, tx) => sum + (tx.increase || 0),
-                    0
-                );
-                const totalDecrease = transactions.reduce(
-                    (sum, tx) => sum + (tx.decrease || 0),
-                    0
-                );
-                return totalIncrease - totalDecrease;
-            } catch (error) {
-                console.error(
-                    `Error fetching transactions for product ${productId}:`,
-                    error
-                );
-                return 0;
-            }
-        };
-
         const productsWithBalances = await Promise.all(
             rows.map(async (product: any) => {
-                const balance = await getTransactionsForProduct(product.id);
-                return { ...product, balance };
+                const balance = await this.getTransactionsForProduct(
+                    product.id,
+                    endDate
+                );
+                return { ...product, ...balance };
             })
         );
 
         return productsWithBalances;
     }
 
-    public static getProductById(productId: number): any {
+    public static async getProductById(
+        productId: number
+    ): Promise<Product | null> {
         const query = `
             SELECT 
                 products.*, 
@@ -194,7 +237,16 @@ class DatabaseManager {
                 products.id = ?
         `;
         const stmt = this.prepareStatement(query);
-        return stmt?.get(productId) || null;
+        const product = stmt?.get(productId) as Product | null;
+
+        if (!product) return null;
+
+        const balance = await this.getTransactionsForProduct(
+            product.id!,
+            format(new Date(), "yyyy-MM-dd")
+        );
+
+        return { ...product, ...balance };
     }
 
     public static addProduct(
@@ -204,15 +256,7 @@ class DatabaseManager {
         createdDate: string | null,
         expiryDate: string | null,
         description: string
-    ): {
-        id?: number;
-        name: string;
-        storeId: number | null;
-        unitId: number | null;
-        createdDate: string | null;
-        expiryDate: string | null;
-        description: string;
-    } {
+    ): Product {
         const stmt = this.prepareStatement(
             `INSERT INTO products (name, storeId, unitId, createdDate, expiryDate, description) VALUES (?, ?, ?, ?, ?, ?)`
         );
@@ -224,6 +268,7 @@ class DatabaseManager {
             expiryDate ?? null,
             description
         ) as Result;
+
         return {
             id: result?.lastInsertRowid,
             name,
@@ -243,15 +288,7 @@ class DatabaseManager {
         createdDate: string | null,
         expiryDate: string | null,
         description: string
-    ): {
-        id: number;
-        name: string;
-        storeId: number | null;
-        unitId: number | null;
-        createdDate: string | null;
-        expiryDate: string | null;
-        description: string;
-    } {
+    ): Product {
         const stmt = this.prepareStatement(
             `UPDATE products SET name = ?, storeId = ?, unitId = ?, createdDate = ?, expiryDate = ?, description = ? WHERE id = ?`
         );
@@ -276,19 +313,34 @@ class DatabaseManager {
     }
 
     public static deleteProduct(id: number): { success: boolean } {
+        // First, delete transactions associated with the product
+        const deleteTransactionsStmt = this.prepareStatement(
+            "DELETE FROM transactions WHERE productId = ?"
+        );
+        deleteTransactionsStmt?.run(id);
+
+        // Now, delete the product
         const stmt = this.prepareStatement("DELETE FROM products WHERE id = ?");
         stmt?.run(id);
+
         return { success: true };
     }
 
     // ******************** Transactions ********************
+
     public static async getTransactions(
         productId?: number,
-        endDate?: string
-    ): Promise<any[]> {
+        endDate?: string,
+        searchDate?: string,
+        limit?: number,
+        offset?: number
+    ): Promise<{
+        data: Transaction[];
+        pagination: { totalRecords: number; totalPages: number };
+    }> {
         // Format endDate if provided
         endDate = endDate ? format(new Date(endDate), "yyyy-MM-dd") : undefined;
-
+    
         // Base query to fetch transactions and join with product names
         let query = `
             SELECT 
@@ -300,31 +352,78 @@ class DatabaseManager {
                 products ON transactions.productId = products.id
         `;
         const conditions: string[] = [];
-        const params: any[] = [];
-
+        const params: (number | string)[] = [];
+    
         // Add productId filter if provided
         if (productId) {
             conditions.push("transactions.productId = ?");
             params.push(productId);
         }
-
+    
         // If endDate is provided, fetch all transactions until this date
         if (endDate) {
             conditions.push("transactions.createdAt <= ?");
             params.push(endDate);
         }
-
+    
+        // Add searchDate filter if provided
+        if (searchDate) {
+            // Search for dates that contain the searchDate substring
+            conditions.push("transactions.createdAt LIKE ?");
+            params.push(`%${searchDate}%`);
+        }
+    
         // Append conditions to the query if there are any
         if (conditions.length) {
             query += ` WHERE ${conditions.join(" AND ")}`;
         }
-
-        // Sort transactions by createdAt date in descending order (latest first)
-        query += " ORDER BY transactions.createdAt DESC";
-
-        // Prepare and execute the SQL statement
+    
+        // Order by createdAt date
+        query += ` ORDER BY transactions.createdAt DESC`; // Use ASC for ascending order
+    
+        // Get total count of records
+        const countQuery = `SELECT COUNT(*) AS totalCount FROM (${query}) AS subquery`;
+        const countStmt = this.prepareStatement(countQuery);
+        const totalResult = countStmt?.get(...params) as TotalResult;
+        const totalRecords = totalResult?.totalCount || 0;
+    
+        // Calculate total pages
+        const totalPages = limit ? Math.ceil(totalRecords / limit) : 1;
+    
+        // Add pagination if limit is provided
+        if (limit !== undefined) {
+            query += ` LIMIT ? OFFSET ?`;
+            params.push(limit, offset || 0);
+        }
+    
+        // Prepare and execute the main SQL statement
         const stmt = this.prepareStatement(query);
-        return stmt?.all(...params) || [];
+        const data = stmt?.all(...params) as Transaction[];
+    
+        // Return data and pagination info
+        return {
+            data,
+            pagination: {
+                totalRecords,
+                totalPages,
+            },
+        };
+    }
+
+    public static async getTransactionById(
+        transactionId: number
+    ): Promise<Transaction | null> {
+        const query = `
+            SELECT * FROM transactions WHERE id = ?`;
+        const stmt = this.prepareStatement(query);
+        const transaction = stmt?.get(transactionId) as Transaction | null;
+
+        // Check if transaction is null before proceeding
+        if (!transaction) {
+            return null; // Or handle error case as per your needs
+        }
+
+        return transaction || null;
     }
 
     public static addTransaction(
@@ -377,15 +476,12 @@ class DatabaseManager {
     }
 
     // ******************** Stores ********************
-    public static getStores(): any[] {
+    public static getStores(): Store[] {
         const query = "SELECT * FROM stores";
         return this.executeQuery(query);
     }
 
-    public static addStore(
-        name: string,
-        description: string
-    ): { id?: number; name: string; description: string } {
+    public static addStore(name: string, description: string): Store {
         const stmt = this.prepareStatement(
             "INSERT INTO stores (name, description) VALUES (?, ?)"
         );
@@ -397,7 +493,7 @@ class DatabaseManager {
         id: number,
         name: string,
         description: string
-    ): { id: number; name: string; description: string } {
+    ): Store {
         const stmt = this.prepareStatement(
             "UPDATE stores SET name = ?, description = ? WHERE id = ?"
         );
@@ -412,15 +508,12 @@ class DatabaseManager {
     }
 
     // ******************** Units ********************
-    public static getUnits(): any[] {
+    public static getUnits(): Unit[] {
         const query = "SELECT * FROM units";
         return this.executeQuery(query);
     }
 
-    public static addUnit(
-        name: string,
-        description: string
-    ): { id?: number; name: string; description: string } {
+    public static addUnit(name: string, description: string): Unit {
         const stmt = this.prepareStatement(
             "INSERT INTO units (name, description) VALUES (?, ?)"
         );
@@ -432,7 +525,7 @@ class DatabaseManager {
         id: number,
         name: string,
         description: string
-    ): { id: number; name: string; description: string } {
+    ): Unit {
         const stmt = this.prepareStatement(
             "UPDATE units SET name = ?, description = ? WHERE id = ?"
         );

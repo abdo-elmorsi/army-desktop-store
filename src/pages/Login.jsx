@@ -10,7 +10,7 @@ const Login = () => {
   const [showPass, setShowPass] = useState(false);
   const navigate = useNavigate();
 
-  const { loading, data: users } = useDatabase('users');
+  const { loading, data: users, error } = useDatabase('users');
 
   const handleShowPass = () => setShowPass(!showPass);
 
@@ -63,6 +63,8 @@ const Login = () => {
             تسجيل الدخول
           </Button>
         </form>
+        {error && <p className="mt-4 text-red-600 text-center">{error}</p>}
+
       </div>
     </div>
   );
