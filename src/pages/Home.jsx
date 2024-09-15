@@ -10,7 +10,8 @@ import { format } from 'date-fns';
 const Home = ({ view = false }) => {
   const { user } = useLocalStorageUser();
 
-  const [selectedDate, setSelectedDate] = useSavedState(format(new Date(), "yyyy-MM-dd"), 'selected-date');
+  const [firstDateInTransactions, setFirstDateInTransactions] = useSavedState("", 'first-date-in-transactions', { expirationDays: 1 });
+  const [selectedDate, setSelectedDate] = useSavedState(format(new Date(), "yyyy-MM-dd"), 'selected-date', { expirationDays: 1 });
   const { fetchData, data: notFormattedProducts, loadingProducts, errorProducts } = useDatabase('products', null, [new Date(selectedDate)]);
 
   const { data: stores, loading: loadingStores, error: errorStores } = useDatabase('stores');
@@ -22,6 +23,14 @@ const Home = ({ view = false }) => {
     }
 
   }, [selectedDate, loadingProducts])
+
+  useEffect(() => {
+    const fetchFirstDate = async () => {
+      const result = await window.ipcRenderer.invoke('get-first-date-in-transactions');
+      setFirstDateInTransactions(result || new Date());
+    }
+    !firstDateInTransactions && fetchFirstDate()
+  }, [])
 
 
 
@@ -61,7 +70,7 @@ const Home = ({ view = false }) => {
         <div className='flex items-center gap-10'>
           {!view && (
             <CustomDatePicker
-              // minDate={getMinDateInArray(productsHistory, "createdAt")}
+              minDate={new Date(firstDateInTransactions)}
               maxDate={new Date()}
               value={selectedDate || new Date()}
               onChange={value => {

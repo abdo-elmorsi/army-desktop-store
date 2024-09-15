@@ -35,14 +35,15 @@ const TransactionsHistory = () => {
   }, 1000)).current;
 
   const handleDelete = useCallback(async (id) => {
-    const confirmationMessage = 'هل انت متأكد من حذف هذه الحركه';
+    const confirmationMessage = id ? 'هل انت متأكد من حذف هذه الحركه' : 'هل انت متأكد من حذف جميع الحركات';
     const isConfirmed = window.location.host.includes('vercel.app')
       ? window.confirm(confirmationMessage)
       : await window.ipcRenderer.showPrompt(confirmationMessage, 'John Doe');
 
     if (isConfirmed) {
-      await deleteItem(id);
+      id ? await deleteItem(id) : await window.ipcRenderer.invoke('delete-all-transactions', productId);
       fetchProducts(productId)
+      !id && fetchData(null, [productId, null, "", 5, 0]);
     }
   }, [deleteItem]);
 
@@ -86,14 +87,23 @@ const TransactionsHistory = () => {
         </ul>
       </nav>
 
-      <Link
-        to={`/transactions/add?product-id=${productId}`}
-        className="bg-primary text-white px-4 py-2 rounded hover:bg-hoverPrimary mb-4 inline-block"
-      >
-        اضافه
-      </Link>
+      <div className='flex justify-between items-center w-full'>
+        <Link
+          to={`/transactions/add?product-id=${productId}`}
+          className="bg-primary text-white px-4 py-2 rounded hover:bg-hoverPrimary mb-4 inline-block"
+        >
+          اضافه
+        </Link>
+        <Button
+          title="يفضل الحذف مع بداية سنه جديده"
+          onClick={() => handleDelete(null)}
+          className="btn--red"
+        >
+          حذف الكل
+        </Button>
+      </div>
 
-      <div className="mb-4">
+      <div className="mb-4 pe-7">
         <Input
           type="text"
           placeholder="ابحث عن حركة بالتاريخ"

@@ -340,7 +340,7 @@ class DatabaseManager {
     }> {
         // Format endDate if provided
         endDate = endDate ? format(new Date(endDate), "yyyy-MM-dd") : undefined;
-    
+
         // Base query to fetch transactions and join with product names
         let query = `
             SELECT 
@@ -353,53 +353,53 @@ class DatabaseManager {
         `;
         const conditions: string[] = [];
         const params: (number | string)[] = [];
-    
+
         // Add productId filter if provided
         if (productId) {
             conditions.push("transactions.productId = ?");
             params.push(productId);
         }
-    
+
         // If endDate is provided, fetch all transactions until this date
         if (endDate) {
             conditions.push("transactions.createdAt <= ?");
             params.push(endDate);
         }
-    
+
         // Add searchDate filter if provided
         if (searchDate) {
             // Search for dates that contain the searchDate substring
             conditions.push("transactions.createdAt LIKE ?");
             params.push(`%${searchDate}%`);
         }
-    
+
         // Append conditions to the query if there are any
         if (conditions.length) {
             query += ` WHERE ${conditions.join(" AND ")}`;
         }
-    
+
         // Order by createdAt date
         query += ` ORDER BY transactions.createdAt DESC`; // Use ASC for ascending order
-    
+
         // Get total count of records
         const countQuery = `SELECT COUNT(*) AS totalCount FROM (${query}) AS subquery`;
         const countStmt = this.prepareStatement(countQuery);
         const totalResult = countStmt?.get(...params) as TotalResult;
         const totalRecords = totalResult?.totalCount || 0;
-    
+
         // Calculate total pages
         const totalPages = limit ? Math.ceil(totalRecords / limit) : 1;
-    
+
         // Add pagination if limit is provided
         if (limit !== undefined) {
             query += ` LIMIT ? OFFSET ?`;
             params.push(limit, offset || 0);
         }
-    
+
         // Prepare and execute the main SQL statement
         const stmt = this.prepareStatement(query);
         const data = stmt?.all(...params) as Transaction[];
-    
+
         // Return data and pagination info
         return {
             data,
@@ -424,6 +424,26 @@ class DatabaseManager {
         }
 
         return transaction || null;
+    }
+
+    public static getFirstTransactionDate(): string | null {
+        const query = `SELECT MIN(createdAt) as firstDate FROM transactions`;
+        const stmt = this.prepareStatement(query);
+        const result = stmt?.get() as { firstDate: string | null };
+        return result?.firstDate || null;
+    }
+    public static deleteAllTransactions(productId: number): boolean {
+        const query = `DELETE FROM transactions WHERE productId = ?`;
+        const stmt = this.prepareStatement(query);
+
+        try {
+            const result = stmt?.run(productId);
+            // Use optional chaining and default value for changes
+            return (result?.changes ?? 0) > 0;
+        } catch (err) {
+            console.error("Error deleting transactions:", err);
+            return false; // Return false in case of an error
+        }
     }
 
     public static addTransaction(

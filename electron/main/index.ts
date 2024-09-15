@@ -194,6 +194,12 @@ app.whenReady().then(() => {
         }
     );
 
+    ipcMain.handle("get-first-date-in-transactions", async () => {
+        return DatabaseManager.getFirstTransactionDate();
+    });
+    ipcMain.handle("delete-all-transactions", async (_, productId: number) => {
+        return DatabaseManager.deleteAllTransactions(productId);
+    });
     ipcMain.handle("get-transactions-by-id", async (_, transactionId) => {
         return DatabaseManager.getTransactionById(transactionId);
     });
