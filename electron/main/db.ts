@@ -449,10 +449,10 @@ class DatabaseManager {
     public static addTransaction(
         productId: number,
         increase: number,
-        decrease: number
-    ): { id?: number; productId: number; increase: number; decrease: number } {
-        const createdAt = format(new Date(), "yyyy-MM-dd");
-        // const createdAt = format(subDays(new Date(), 1), "yyyy-MM-dd");
+        decrease: number,
+        createdAt: string
+    ): Transaction {
+        // const createdAt = format(new Date(), "yyyy-MM-dd");
 
         const stmt = this.prepareStatement(
             "INSERT INTO transactions (productId, increase, decrease, createdAt) VALUES (?, ?, ?, ?)"
@@ -468,6 +468,7 @@ class DatabaseManager {
             productId,
             increase,
             decrease,
+            createdAt,
         };
     }
 

@@ -1,8 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { formatComma } from '@/utils';
 import { useDatabase, useInput } from '@/hooks';
-import { Button, Input } from '@/components';
+import { Button, Input, CustomDatePicker } from '@/components';
+import { format } from 'date-fns';
 
 const ProductsBalanceForm = () => {
   const { id } = useParams();
@@ -17,6 +18,7 @@ const ProductsBalanceForm = () => {
 
   const increase = useInput("", "number", true);
   const decrease = useInput("", "number", true);
+  const [createdAt, setCreatedAt] = useState(new Date());
 
 
   useEffect(() => {
@@ -26,6 +28,7 @@ const ProductsBalanceForm = () => {
         if (transaction) {
           increase.changeValue(transaction.increase)
           decrease.changeValue(transaction.decrease)
+          setCreatedAt(new Date(transaction.createdAt))
         }
       })()
     }
@@ -45,6 +48,7 @@ const ProductsBalanceForm = () => {
       await updateItem(parseInt(id), data);
     } else {
       data.unshift(productId)
+      data.push(format(createdAt || new Date(), "yyyy-MM-dd"))
       await addItem(data);
     }
     navigate(-1);
@@ -112,6 +116,15 @@ const ProductsBalanceForm = () => {
               label={"خصم رصيد"}
               {...decrease.bind}
               name="decrease"
+            />
+          </div>
+          <div className="mb-4 w-5/12">
+            <CustomDatePicker
+              disabled={id}
+              label="تاريخ الانتاج"
+              value={createdAt}
+              onChange={setCreatedAt}
+              maxDate={new Date()}
             />
           </div>
 

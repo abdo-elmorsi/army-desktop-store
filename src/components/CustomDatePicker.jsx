@@ -3,7 +3,7 @@ import DatePicker from 'react-date-picker';
 import 'react-date-picker/dist/DatePicker.css';
 import 'react-calendar/dist/Calendar.css';
 
-const CustomDatePicker = ({ minDate, maxDate, value, onChange, label = "" }) => {
+const CustomDatePicker = ({ minDate, maxDate, value, onChange, label = "", ...props }) => {
 	return (
 		<div className='flex flex-col justify-center items-start'>
 			<label className='dark:text-white'>{label}</label>
@@ -16,6 +16,7 @@ const CustomDatePicker = ({ minDate, maxDate, value, onChange, label = "" }) => 
 				value={value}
 				onChange={onChange}
 				locale='ar'
+				{...props}
 			/>
 		</div>
 	);

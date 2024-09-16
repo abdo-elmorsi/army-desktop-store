@@ -15,7 +15,6 @@ const useDatabase = (storeName, id = null, queryParams = []) => {
             const method = id ? `get-${storeName}-by-id` : `get-${storeName}`;
             const args = id ? [id] : queryParams;
 
-            console.log(args);
             try {
                 const result = await window.ipcRenderer.invoke(method, ...args);
                 setState({ data: result, error: null, loading: false });

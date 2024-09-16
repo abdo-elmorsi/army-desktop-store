@@ -97,9 +97,12 @@ const TransactionsHistory = () => {
         <Button
           title="يفضل الحذف مع بداية سنه جديده"
           onClick={() => handleDelete(null)}
-          className="btn--red"
+          className="btn--red flex gap-2 items-center"
         >
-          حذف الكل
+          <BiTrash />
+          <span>
+            حذف الكل
+          </span>
         </Button>
       </div>
 
@@ -133,7 +136,7 @@ const TransactionsHistory = () => {
             ) : (
               <>
                 {transactions.length > 0 && (
-                  <tr className="bg-gray-100 dark:bg-gray-900 sticky top-10 z-10">
+                  <tr className="bg-gray-100 dark:bg-gray-900 sticky top-12 z-10">
                     <td className="text-center p-4 text-gray-800 dark:text-gray-200" colSpan={2}>المجموع</td>
                     <td className="text-center p-4 text-green-500 gap-2">
                       <FaArrowTrendUp />
@@ -194,7 +197,7 @@ const TransactionsHistory = () => {
 
       <div className="flex justify-center my-4 items-center">
         <Button disabled={currentPage === 1} onClick={() => handlePageChange(currentPage - 1)}>السابق</Button>
-        <span className="mx-4">صفحة {currentPage} من {totalPages}</span>
+        <span className="mx-4 dark:text-white">صفحة {currentPage} من {totalPages}</span>
         <Button disabled={currentPage === totalPages} onClick={() => handlePageChange(currentPage + 1)}>التالي</Button>
       </div>
     </div>
