@@ -47,7 +47,7 @@ const ProductsBalanceForm = () => {
       await updateItem(parseInt(id), data);
     } else {
       data.unshift(productId)
-      data.push(createdAt || new Date())
+      data.push(new Date(createdAt).toISOString())
       await addItem(data);
     }
     navigate(-1);
@@ -136,6 +136,7 @@ const ProductsBalanceForm = () => {
           <Button className="btn--primary w-36" disabled={
             (!+increase.value &&
               !+decrease.value) ||
+            !createdAt  ||
             loading
           } onClick={handleSubmit}>
             حفظ
