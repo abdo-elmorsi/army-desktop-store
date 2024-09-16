@@ -461,7 +461,7 @@ class DatabaseManager {
             productId,
             increase,
             decrease,
-            createdAt
+            format(createdAt, "yyyy-MM-dd")
         ) as Result;
         return {
             id: result?.lastInsertRowid,

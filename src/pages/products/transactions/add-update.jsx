@@ -3,7 +3,6 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { formatComma } from '@/utils';
 import { useDatabase, useInput } from '@/hooks';
 import { Button, Input, CustomDatePicker } from '@/components';
-import { format } from 'date-fns';
 
 const ProductsBalanceForm = () => {
   const { id } = useParams();
@@ -48,7 +47,7 @@ const ProductsBalanceForm = () => {
       await updateItem(parseInt(id), data);
     } else {
       data.unshift(productId)
-      data.push(format(createdAt || new Date(), "yyyy-MM-dd"))
+      data.push(createdAt || new Date())
       await addItem(data);
     }
     navigate(-1);
