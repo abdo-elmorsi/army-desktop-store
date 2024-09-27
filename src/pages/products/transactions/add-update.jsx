@@ -120,7 +120,7 @@ const ProductsBalanceForm = () => {
           <div className="mb-4 w-5/12">
             <CustomDatePicker
               disabled={id}
-              label="تاريخ الانتاج"
+              label="تاريخ الحركه"
               value={createdAt}
               onChange={setCreatedAt}
               maxDate={new Date()}
