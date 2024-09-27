@@ -3,9 +3,10 @@ import { useSavedState, useDatabase, useStoreSwipe, useLocalStorageUser } from '
 import { Button, CustomDatePicker, Error } from '@/components';
 import { formatComma, getDateDifference, isExpiringSoon } from '@/utils';
 import { Link } from 'react-router-dom';
-import { FaBalanceScale, FaEye } from 'react-icons/fa';
+import { FaEye } from 'react-icons/fa';
 import { BiArrowFromRight } from 'react-icons/bi';
 import { format } from 'date-fns';
+import { FaArrowTrendDown, FaArrowTrendUp } from 'react-icons/fa6';
 
 const Home = ({ view = false }) => {
   const { user } = useLocalStorageUser();
@@ -122,11 +123,20 @@ const Home = ({ view = false }) => {
                 <tr key={product.id} className={`${i % 2 === 0 ? 'bg-gray-100 dark:bg-gray-700' : 'bg-white dark:bg-gray-800'}`}>
                   <td className="text-center p-4 text-gray-800 dark:text-gray-200">{i + 1}</td>
                   <td className="font-bold text-center p-4 text-gray-950 dark:text-gray-50">{product.name}</td>
-                  <td className={`flex justify-center items-center gap-2 p-4 font-bold ${product?.balance > 0 ? 'text-green-500' : 'text-red-500'}`}>
-                    <FaBalanceScale />
+                  <td className="text-center p-4 text-gray-950 dark:text-gray-50 flex flex-col gap-2">
                     <span>
                       {formatComma(product?.balance || 0)} ({product.unitName})
                     </span>
+                    <div className='flex justify-between items-center'>
+                      <p className='text-green-500 flex gap-2 m-0 items-center justify-center'>
+                        <FaArrowTrendUp />
+                        <span>{formatComma(product?.lastTransaction?.increase || 0)}</span>
+                      </p>
+                      <p className='text-red-500 flex gap-2 m-0 items-center justify-center'>
+                        <FaArrowTrendDown />
+                        <span>{formatComma(product?.lastTransaction?.decrease || 0)}</span>
+                      </p>
+                    </div>
                   </td>
                   <td className="text-center p-4 text-gray-800 dark:text-gray-200">{product.createdDate}</td>
                   <td className={`text-center p-4 ${isExpiringSoon(product.expiryDate) ? 'text-red-600' : 'text-gray-800 dark:text-gray-200'}`}>

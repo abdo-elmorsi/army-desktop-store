@@ -3,8 +3,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useDatabase, useExportExcel } from '@/hooks';
 import { Button, Error, Select } from '@/components';
 import { formatComma, isExpiringSoon } from '@/utils';
-import { FaBalanceScale, FaDownload } from 'react-icons/fa';
+import { FaDownload } from 'react-icons/fa';
 import { format } from 'date-fns';
+import { FaArrowTrendDown, FaArrowTrendUp } from 'react-icons/fa6';
 const options = [
   { value: 'view', label: 'عرض الحركات' },
   { value: 'editBalance', label: 'تعديل الرصيد' },
@@ -46,11 +47,21 @@ const Products = () => {
       { name: "ألاسم", selector: row => row?.name },
       { name: "المخزن", selector: row => row.storeName },
       {
-        name: "الرصيد", selector: row => <div className={`flex justify-center items-center gap-2 text-gray-950 font-bold ${row?.balance > 0 ? 'text-green-500' : 'text-red-500'}`}>
-          <FaBalanceScale />
+        name: "الرصيد", selector: row => <div className={`text-center p-4 text-gray-950 dark:text-gray-50 flex flex-col gap-2`}>
           <span>
             {formatComma(row?.balance || 0)} ({row.unitName})
           </span>
+
+          <div className='flex justify-between items-center'>
+            <p className='text-green-500 flex gap-2 m-0 items-center justify-center'>
+              <FaArrowTrendUp />
+              <span>{formatComma(row?.lastTransaction?.increase || 0)}</span>
+            </p>
+            <p className='text-red-500 flex gap-2 m-0 items-center justify-center'>
+              <FaArrowTrendDown />
+              <span>{formatComma(row?.lastTransaction?.decrease || 0)}</span>
+            </p>
+          </div>
         </div>
       },
       { name: "تاريخ الانتاج", selector: row => row?.createdDate },

@@ -130,7 +130,12 @@ class DatabaseManager {
     public static async getTransactionsForProduct(
         productId: number,
         endDate: string | undefined
-    ): Promise<{ increase: number; decrease: number; balance: number } | null> {
+    ): Promise<{
+        increase: number;
+        decrease: number;
+        balance: number;
+        lastTransaction: any | null;
+    } | null> {
         const transactions = await this.getTransactions(productId, endDate);
         if (!transactions) return null;
         const totalIncrease = transactions.data.reduce(
@@ -142,10 +147,20 @@ class DatabaseManager {
             0
         );
 
+        // Assuming transactions are sorted by date (oldest to newest), get the last transaction
+
+        const lastTransaction =
+            transactions?.data?.find(
+                (tx) =>
+                    tx.createdAt ===
+                    format(new Date(endDate ?? new Date()), "yyyy-MM-dd")
+            ) || {};
+
         return {
             increase: totalIncrease,
             decrease: totalDecrease,
             balance: totalIncrease - totalDecrease,
+            lastTransaction,
         };
     }
 
