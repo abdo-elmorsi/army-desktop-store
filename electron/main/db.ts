@@ -110,12 +110,12 @@ class DatabaseManager {
             `CREATE TABLE IF NOT EXISTS stores (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
-                description TEXT NOT NULL
+                description
             )`,
             `CREATE TABLE IF NOT EXISTS units (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
-                description TEXT NOT NULL
+                description
             )`,
         ];
 
@@ -123,22 +123,22 @@ class DatabaseManager {
             this.db?.exec(query);
         });
 
-        // Check and add missing columns
-        const columnCheck = this.db
-            ?.prepare(`PRAGMA table_info(transactions);`)
-            .all();
-        console.log({ columnCheck });
+        // // Check and add missing columns
+        // const columnCheck = this.db
+        //     ?.prepare(`PRAGMA table_info(transactions);`)
+        //     .all();
+        // console.log({ columnCheck });
 
-        const descriptionColumnExists = columnCheck?.some(
-            (column: any) => column.name === "description"
-        );
-        console.log({ descriptionColumnExists });
+        // const descriptionColumnExists = columnCheck?.some(
+        //     (column: any) => column.name === "description"
+        // );
+        // console.log({ descriptionColumnExists });
 
-        if (!descriptionColumnExists) {
-            this.db?.exec(
-                `ALTER TABLE transactions ADD COLUMN description TEXT;`
-            );
-        }
+        // if (!descriptionColumnExists) {
+        //     this.db?.exec(
+        //         `ALTER TABLE transactions ADD COLUMN description TEXT;`
+        //     );
+        // }
     }
 
     private static prepareStatement(
