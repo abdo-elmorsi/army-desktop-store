@@ -133,7 +133,7 @@ const Products = () => {
           <FaDownload />
         </Button>
       </div>
-      <div className="overflow-auto" style={{ height: '60vh' }}>
+      <div className="overflow-auto" style={{ height: '65vh' }}>
         <table className="w-full bg-white dark:bg-gray-800 shadow-md rounded border border-gray-200 dark:border-gray-700">
           <thead className="bg-gray-300 dark:bg-gray-800 sticky top-0 z-10">
             <tr>

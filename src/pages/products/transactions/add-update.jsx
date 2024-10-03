@@ -17,6 +17,7 @@ const ProductsBalanceForm = () => {
 
   const increase = useInput("", "number", true);
   const decrease = useInput("", "number", true);
+  const description = useInput("", "");
   const [createdAt, setCreatedAt] = useState(new Date());
 
 
@@ -27,6 +28,7 @@ const ProductsBalanceForm = () => {
         if (transaction) {
           increase.changeValue(transaction.increase)
           decrease.changeValue(transaction.decrease)
+          description.changeValue(transaction.description)
           setCreatedAt(new Date(transaction.createdAt))
         }
       })()
@@ -41,6 +43,7 @@ const ProductsBalanceForm = () => {
     let data = [
       increase.value,
       decrease.value,
+      description.value,
     ]
 
     if (id) {
@@ -124,6 +127,14 @@ const ProductsBalanceForm = () => {
               value={createdAt}
               onChange={setCreatedAt}
               maxDate={new Date()}
+            />
+          </div>
+          <div className="mb-4 w-5/12">
+            <Input
+
+              label={"الوصف"}
+              {...description.bind}
+              name="description"
             />
           </div>
 

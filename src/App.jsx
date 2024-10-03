@@ -29,7 +29,8 @@ function App() {
   }, []);
 
   return (
-    <Router>
+    <div className=''>
+      <Router>
       <Suspense fallback={<Progress />}>
         <Routes>
           <Route path="/" element={<Layout><Home /></Layout>} />
@@ -58,6 +59,7 @@ function App() {
         </Routes>
       </Suspense>
     </Router>
+    </div>
   );
 }
 

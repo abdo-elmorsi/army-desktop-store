@@ -211,12 +211,14 @@ app.whenReady().then(() => {
             productId: number,
             increase: number,
             decrease: number,
+            description: string,
             createdAt: string
         ) => {
             return DatabaseManager.addTransaction(
                 productId,
                 increase,
                 decrease,
+                description,
                 createdAt
             );
         }
@@ -224,8 +226,19 @@ app.whenReady().then(() => {
 
     ipcMain.handle(
         "update-transactions",
-        async (_, id: number, increase: number, decrease: number) => {
-            return DatabaseManager.updateTransaction(id, increase, decrease);
+        async (
+            _,
+            id: number,
+            increase: number,
+            decrease: number,
+            description: string
+        ) => {
+            return DatabaseManager.updateTransaction(
+                id,
+                increase,
+                decrease,
+                description
+            );
         }
     );
 

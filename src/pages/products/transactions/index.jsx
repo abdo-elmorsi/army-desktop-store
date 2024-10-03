@@ -125,6 +125,7 @@ const TransactionsHistory = () => {
               <th className="p-4 text-gray-800 dark:text-gray-300">اضافه</th>
               <th className="p-4 text-gray-800 dark:text-gray-300">خصم</th>
               <th className="p-4 text-gray-800 dark:text-gray-300">الرصيد</th>
+              <th className="p-4 text-gray-800 dark:text-gray-300">الوصف</th>
               <th className="p-4 text-gray-800 dark:text-gray-300">الاوامر</th>
             </tr>
           </thead>
@@ -150,7 +151,7 @@ const TransactionsHistory = () => {
                       <FaBalanceScale />
                       <span className='mx-2'>{formatComma(product.balance)}</span>
                     </td>
-                    <td className="p-4"></td>
+                    <td className="p-4" colSpan={2}></td>
                   </tr>
                 )}
                 {transactions.map((transaction, i) => (
@@ -169,6 +170,8 @@ const TransactionsHistory = () => {
                       <FaBalanceScale />
                       <span className='mx-2'>{formatComma(transaction.increase - transaction.decrease)}</span>
                     </td>
+                    <td className="text-center p-4 text-gray-800 dark:text-gray-200">{transaction?.description}</td>
+
                     <td className="p-4 flex justify-center gap-2">
                       <Button
                         disabled={loading}

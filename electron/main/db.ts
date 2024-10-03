@@ -4,6 +4,12 @@ import { fileURLToPath } from "node:url";
 import { app } from "electron";
 import { format } from "date-fns";
 
+function sum(arr: [], prop: string) {
+    return arr.reduce((accumulator, object) => {
+        return accumulator + (prop ? +object[prop] : object);
+    }, 0);
+}
+
 interface User {
     id?: number;
     username: string;
@@ -26,6 +32,7 @@ interface Transaction {
     productId: number;
     increase: number;
     decrease: number;
+    description: string;
     createdAt: string;
 }
 
@@ -97,6 +104,7 @@ class DatabaseManager {
                 increase INTEGER NOT NULL DEFAULT 0,
                 decrease INTEGER NOT NULL DEFAULT 0,
                 createdAt TEXT NOT NULL,
+                description TEXT,
                 FOREIGN KEY (productId) REFERENCES products(id)
             )`,
             `CREATE TABLE IF NOT EXISTS stores (
@@ -114,6 +122,23 @@ class DatabaseManager {
         queries.forEach((query) => {
             this.db?.exec(query);
         });
+
+        // Check and add missing columns
+        const columnCheck = this.db
+            ?.prepare(`PRAGMA table_info(transactions);`)
+            .all();
+        console.log({ columnCheck });
+
+        const descriptionColumnExists = columnCheck?.some(
+            (column: any) => column.name === "description"
+        );
+        console.log({ descriptionColumnExists });
+
+        if (!descriptionColumnExists) {
+            this.db?.exec(
+                `ALTER TABLE transactions ADD COLUMN description TEXT;`
+            );
+        }
     }
 
     private static prepareStatement(
@@ -138,29 +163,27 @@ class DatabaseManager {
     } | null> {
         const transactions = await this.getTransactions(productId, endDate);
         if (!transactions) return null;
-        const totalIncrease = transactions.data.reduce(
-            (sum, tx) => sum + (tx.increase || 0),
-            0
-        );
-        const totalDecrease = transactions.data.reduce(
-            (sum, tx) => sum + (tx.decrease || 0),
-            0
-        );
+        const data = (transactions.data as []) || [];
+        const totalIncrease = sum(data, "increase");
+        const totalDecrease = sum(data, "decrease");
 
         // Assuming transactions are sorted by date (oldest to newest), get the last transaction
 
-        const lastTransaction =
-            transactions?.data?.find(
+        const lastTransactions =
+            (transactions?.data?.filter(
                 (tx) =>
                     tx.createdAt ===
                     format(new Date(endDate ?? new Date()), "yyyy-MM-dd")
-            ) || {};
+            ) as []) || [];
 
         return {
             increase: totalIncrease,
             decrease: totalDecrease,
             balance: totalIncrease - totalDecrease,
-            lastTransaction,
+            lastTransaction: {
+                increase: sum(lastTransactions, "increase"),
+                decrease: sum(lastTransactions, "decrease"),
+            },
         };
     }
 
@@ -465,17 +488,19 @@ class DatabaseManager {
         productId: number,
         increase: number,
         decrease: number,
+        description: string,
         createdAt: string
     ): Transaction {
         // const createdAt = format(new Date(), "yyyy-MM-dd");
 
         const stmt = this.prepareStatement(
-            "INSERT INTO transactions (productId, increase, decrease, createdAt) VALUES (?, ?, ?, ?)"
+            "INSERT INTO transactions (productId, increase, decrease, description, createdAt) VALUES (?, ?, ?, ?, ?)"
         );
         const result = stmt?.run(
             productId,
             increase,
             decrease,
+            description,
             format(createdAt, "yyyy-MM-dd")
         ) as Result;
         return {
@@ -483,6 +508,7 @@ class DatabaseManager {
             productId,
             increase,
             decrease,
+            description,
             createdAt,
         };
     }
@@ -490,17 +516,19 @@ class DatabaseManager {
     public static updateTransaction(
         id: number,
         increase: number,
-        decrease: number
+        decrease: number,
+        description: string
     ): {
         id: number;
         increase: number;
         decrease: number;
+        description: string;
     } {
         const stmt = this.prepareStatement(
-            "UPDATE transactions SET  increase = ?, decrease = ? WHERE id = ?"
+            "UPDATE transactions SET  increase = ?, decrease = ?, description = ? WHERE id = ?"
         );
-        stmt?.run(increase, decrease, id);
-        return { id, increase, decrease };
+        stmt?.run(increase, decrease, description, id);
+        return { id, increase, decrease, description };
     }
 
     public static deleteTransaction(id: number): { success: boolean } {
