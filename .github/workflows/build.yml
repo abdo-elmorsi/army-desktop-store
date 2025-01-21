@@ -29,11 +29,13 @@ jobs:
                   npm run build
 
             - name: Create Tag
-              run: |
-                git tag v${{ github.event.release.tag_name }}
-                git push origin v${{ github.event.release.tag_name }} || echo "Tag already exists, skipping push."
               env:
-                GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
+                  GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
+              run: |
+                  git config --global user.name 'github-actions[bot]'
+                  git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+                  git tag v${{ github.event.release.tag_name }}
+                  git push origin v${{ github.event.release.tag_name }} || echo "Tag already exists, skipping push."
 
             - name: Upload Release Assets
               uses: softprops/action-gh-release@v1
@@ -41,4 +43,3 @@ jobs:
                   files: "release/${{ github.event.release.tag_name }}/*"
               env:
                   GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
-
