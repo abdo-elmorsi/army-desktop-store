@@ -1,12 +1,12 @@
 import React, { useEffect } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { useIndexedDB, useInput } from '@/hooks';
-import { Button, Input } from '@/components';
+import { useDatabase, useInput } from '@/hooks';
+import { Button, Input, Error } from '@/components';
 
 const StoreForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { data: stores, addItem, loading, updateItem } = useIndexedDB('stores');
+  const { data: stores, loading, error, addItem, updateItem } = useDatabase('stores');
 
   const name = useInput("", null);
   const description = useInput("", null);
@@ -25,14 +25,18 @@ const StoreForm = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const data = [name.value, description.value];
     if (id) {
-      updateItem(parseInt(id), { name: name.value, description: description.value });
+      updateItem(parseInt(id), data);
     } else {
-      addItem({ name: name.value, description: description.value });
+      addItem(data);
     }
     navigate('/stores');
   };
 
+  if (error) {
+    return <Error message={error} onRetry={() => window.location.reload()} />;
+  }
 
   if (loading && id) {
     return (
@@ -56,7 +60,7 @@ const StoreForm = () => {
       <nav className="text-gray-700 dark:text-gray-300 mb-4">
         <ul className="list-reset flex">
           <li>
-            <Link to="/stores" className="text-blue-500 dark:text-blue-400 hover:underline">
+            <Link to="/stores" className="text-primary hover:underline">
               المخازن
             </Link>
           </li>

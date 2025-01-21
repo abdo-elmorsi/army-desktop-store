@@ -1,27 +1,31 @@
-import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useIndexedDB, useExportExcel, useFilteredProducts } from '@/hooks';
-import { Button } from '@/components';
-import { formatComma, getLabel, isExpiringSoon } from '@/utils';
-import { format } from 'date-fns';
-import { CgArrowUp } from 'react-icons/cg';
+import { useDatabase, useExportExcel } from '@/hooks';
+import { Button, Error, Select } from '@/components';
+import { formatComma, isExpiringSoon } from '@/utils';
 import { FaDownload } from 'react-icons/fa';
+import { format } from 'date-fns';
 import { FaArrowTrendDown, FaArrowTrendUp } from 'react-icons/fa6';
+const options = [
+  { value: 'view', label: 'عرض الحركات' },
+  { value: 'editBalance', label: 'تعديل الرصيد' },
+  { value: 'edit', label: 'تعديل' },
+  { value: 'delete', label: 'حذف' },
+];
 
 const Products = () => {
   const navigate = useNavigate();
-  const tableRef = useRef(null);
-  const [isUpdated, setIsUpdated] = useState(false);
-  const [updatingHistory, setUpdatingHistory] = useState(false)
+  const { data: notFormattedProducts, loading, error, deleteItem } = useDatabase('products');
+  const { data: stores, loading: loadingStores } = useDatabase('stores');
   const [selectedStore, setSelectedStore] = useState(null);
-
-  const { data: products, loading: loadingProducts, updateItem: updateProduct, deleteItem: deleteItemFromProduct } = useIndexedDB('products');
-  const { data: productsHistory, loading: loadingProductsHistory, addItem: addItemToProductHistory, deleteItem: deleteItemFromHistory } = useIndexedDB('productsHistory');
-  const { data: stores, loading: loadingStores } = useIndexedDB('stores');
-  const { data: units } = useIndexedDB('units');
-  const { getProductHistoryForYesterday } = useIndexedDB();
-
-  const filteredProducts = useFilteredProducts(selectedStore, products, loadingProducts, getProductHistoryForYesterday);
+  const products = useMemo(() => {
+    return notFormattedProducts.filter(product => {
+      if (!selectedStore) {
+        return true;
+      }
+      return product.storeId === selectedStore;
+    })
+  }, [selectedStore, notFormattedProducts])
 
   const handleDelete = useCallback(async (id) => {
     const confirmationMessage = 'هل انت متأكد من حذف هذا المنتج';
@@ -30,70 +34,36 @@ const Products = () => {
       : await window.ipcRenderer.showPrompt(confirmationMessage, 'John Doe');
 
     if (isConfirmed) {
-      deleteItemFromProduct(id);
+      await deleteItem(id);
     }
-  }, [deleteItemFromProduct]);
+  }, [deleteItem]);
 
-  const handleExportToHistory = useCallback(async (isNewDate = false) => {
-    try {
-      setUpdatingHistory(true);
-      const today = format(new Date(), "yyyy-MM-dd");
-      const newFilteredProducts = await Promise.all(products.map(async (product) => {
-        const lastItemBalance = await getProductHistoryForYesterday(product?.id);
-        return {
-          ...product,
-          qty: lastItemBalance ? (+lastItemBalance.qty + (+lastItemBalance.increase || 0) - (+lastItemBalance.decrease || 0)) : 0,
-          ...(isNewDate ? { increase: 0, decrease: 0 } : {}),
-        };
-      }));
 
-      const existingRecords = productsHistory.filter(record => record.createdAt === today);
-      await Promise.all(existingRecords.map(record => deleteItemFromHistory(record.id)));
 
-      const newProductHistory = newFilteredProducts.map(({ id, ...others }) => ({
-        ...others,
-        productId: id,
-        createdAt: today,
-      }));
-
-      if (newProductHistory.length > 0) {
-        await Promise.all(newProductHistory.map(newItem => addItemToProductHistory(newItem)));
-      }
-    } catch (error) {
-      console.error("Failed to export to history:", error);
-    } finally {
-      setUpdatingHistory(false);
-    }
-  }, [addItemToProductHistory, deleteItemFromHistory, products, productsHistory, getProductHistoryForYesterday]);
 
   const columns = useMemo(() => {
     return [
       { name: "الرقم التسلسلي", noExport: true, selector: (row, i) => `${i + 1}` },
       { name: "ألاسم", selector: row => row?.name },
-      { name: "المخزن", selector: row => getLabel(row?.storeId, stores) },
-      { name: "الرصيد قبل", selector: row => formatComma(row?.qty) },
+      { name: "المخزن", selector: row => row.storeName },
       {
-        name: "خصم واضافه", noExport: true,
-        selector: row => (
-          <div className='flex flex-col gap-2'>
-            <p className='text-red-500 flex gap-2 m-0 items-center justify-center'>
-              <FaArrowTrendDown />
-              <span>{formatComma(row?.decrease)}</span>
-            </p>
+        name: "الرصيد", selector: row => <div className={`text-center p-4 text-gray-950 dark:text-gray-50 flex flex-col gap-2`}>
+          <span>
+            {formatComma(row?.balance || 0)} ({row.unitName})
+          </span>
+
+          <div className='flex justify-between items-center'>
             <p className='text-green-500 flex gap-2 m-0 items-center justify-center'>
               <FaArrowTrendUp />
-              <span>{formatComma(row?.increase)}</span>
+              <span>{formatComma(row?.lastTransaction?.increase || 0)}</span>
+            </p>
+            <p className='text-red-500 flex gap-2 m-0 items-center justify-center'>
+              <FaArrowTrendDown />
+              <span>{formatComma(row?.lastTransaction?.decrease || 0)}</span>
             </p>
           </div>
-        )
+        </div>
       },
-      { name: "خصم", noShow: true, getValue: row => parseFloat(row?.decrease) },
-      { name: "اضافه", noShow: true, getValue: row => parseFloat(row?.increase) },
-      {
-        name: "الرصيد الفعلي",
-        selector: row => formatComma(+row?.qty + (+row?.increase || 0) - (+row?.decrease || 0))
-      },
-      { name: "وحده القياس", selector: row => getLabel(row?.unitId, units) },
       { name: "تاريخ الانتاج", selector: row => row?.createdDate },
       {
         name: "تاريخ الانتهاء",
@@ -103,57 +73,42 @@ const Products = () => {
       },
       { name: "الوصف", selector: row => row?.description },
     ];
-  }, [stores, units]);
+  }, []);
 
   const exportExcel = useCallback(async (name = 'المنتجات') => {
     try {
-      await useExportExcel(filteredProducts, columns, name, (error) => console.log(error));
+      await useExportExcel(products, columns, name, (error) => console.log(error));
     } catch (error) {
       console.log(error);
     }
-  }, [filteredProducts, columns]);
+  }, [products, columns]);
 
 
-  // to remove today history
-  // useEffect(() => {
-  //   productsHistory.forEach(element => {
-  //     if (element.createdAt === format(new Date(), "yyyy-MM-dd")) {
-  //       deleteItemFromHistory(element?.id);
-  //     } else {
-  //       return;
-  //     }
-  //   });
-  // }, [])
+  if (error) {
+    return <Error message={error} onRetry={() => window.location.reload()} />;
+  }
 
-  useEffect(() => {
-    if (!loadingProducts && !loadingProductsHistory && !isUpdated) {
-      const currentDate = format(new Date(), "yyyy-MM-dd");
-      const isTodayExist = productsHistory?.some(product => product.createdAt === currentDate);
-
-      if (!isTodayExist) {
-        setIsUpdated(true);
-        const updateProducts = async () => {
-          await Promise.all(products.map(product => updateProduct(product.id, { ...product, decrease: 0, increase: 0 })));
-          await handleExportToHistory(true);
-
-        };
-        updateProducts();
-      }
+  const handleSelectChange = (selectedOption, product) => {
+    const action = selectedOption.value;
+    if (action === "view") {
+      navigate(`/transactions/${product.id}`);
+    } else if (action === "editBalance") {
+      navigate(`/transactions/add?product-id=${product.id}`);
+    } else if (action === "edit") {
+      navigate(`/products/edit/${product.id}`);
+    } else if (action === "delete") {
+      handleDelete(product.id);
     }
-  }, [loadingProducts, loadingProductsHistory, isUpdated]);
-
+  };
   return (
     <div className="p-4 bg-gray-50 dark:bg-gray-900">
       <h1 className="text-2xl mb-4 text-gray-800 dark:text-white">المنتجات</h1>
-      <div className='flex justify-between items-center mb-4'>
-        <Link to="/products/add" className="bg-primary text-white px-4 py-2 rounded hover:bg-hoverPrimary">
-          اضافه منتج
-        </Link>
-        <Button disabled={updatingHistory} onClick={() => handleExportToHistory()} className="bg-primary text-white flex items-center gap-2">
-          <span>حفظ تعديلات اليوم</span>
-          <CgArrowUp />
-        </Button>
-      </div>
+      <Link
+        to="/products/add"
+        className="bg-primary text-white px-4 py-2 rounded hover:bg-hoverPrimary mb-4 inline-block"
+      >
+        اضافه منتج
+      </Link>
 
       {loadingStores ? (
         <StoreSkeleton />
@@ -178,10 +133,9 @@ const Products = () => {
           <FaDownload />
         </Button>
       </div>
-
-      <div className="overflow-auto" style={{ height: '55vh' }}>
-        <table ref={tableRef} className="w-full bg-white dark:bg-gray-800 shadow-md rounded border border-gray-200 dark:border-gray-700">
-          <thead className="bg-gray-100 dark:bg-gray-700 sticky top-0 z-10">
+      <div className="overflow-auto" style={{ height: '65vh' }}>
+        <table className="w-full bg-white dark:bg-gray-800 shadow-md rounded border border-gray-200 dark:border-gray-700">
+          <thead className="bg-gray-300 dark:bg-gray-800 sticky top-0 z-10">
             <tr>
               {columns.filter(c => !c.noShow).map(column => (
                 <th key={column.name} className="p-4 text-gray-800 dark:text-gray-300">{column.name}</th>
@@ -190,20 +144,53 @@ const Products = () => {
             </tr>
           </thead>
           <tbody>
-            {(loadingProducts || loadingProductsHistory) ? (
+            {(loading) ? (
               Array.from({ length: 5 }).map((_, index) => (
                 <TableSkeleton columns={columns} key={index} />
               ))
             ) : (
-              filteredProducts.map((product, i) => (
-                <tr key={product.id} className="border-t border-gray-200 dark:border-gray-700">
+              products.map((product, i) => (
+                <tr key={product.id} className={`${i % 2 === 0 ? 'bg-gray-100 dark:bg-gray-700' : 'bg-white dark:bg-gray-800'}`}>
                   {columns.filter(c => !c.noShow).map(column => (
                     <td key={column.name} className="p-4 text-gray-800 dark:text-gray-200">{column.selector(product, i)}</td>
                   ))}
-                  <td className="p-4 flex justify-center gap-2">
-                    <Button onClick={() => navigate(`/products/edit/${product.id}`)} className="bg-primary text-white">تعديل</Button>
-                    <Button onClick={() => handleDelete(product.id)} className="btn--red">حذف</Button>
+                  <td className="p-2">
+                    <div className="relative">
+                      <Select
+                        value={""}
+                        onChange={(value) => handleSelectChange(value, product)}
+                        placeholder="اختيار إجراء"
+                        options={options}
+                      />
+                    </div>
                   </td>
+                  {/* <td className="p-2 flex flex-col gap-2">
+                    <div className='flex justify-start gap-2'>
+                      <Button onClick={() => navigate(`/transactions/${product.id}`)} className="px-2 py-1 bg-primary text-white flex items-center gap-2">
+                        <FaEye />
+                        <span>
+                          عرض الحركات
+                        </span>
+                      </Button>
+                      <Button onClick={() => navigate(`/transactions/add?product-id=${product.id}`)} className="px-2 py-1 bg-primary text-white flex items-center gap-2">
+
+                        <BiEdit />
+                        <span>
+                          تعديل الرصيد
+                        </span>
+                      </Button>
+                    </div>
+                    <div className='flex justify-start gap-2'>
+                      <Button disabled={loading} onClick={() => navigate(`/products/edit/${product.id}`)} className="px-2 py-1 bg-primary text-white flex items-center gap-2">
+                        <BiEdit />
+                        <span>تعديل</span>
+                      </Button>
+                      <Button disabled={loading} onClick={() => handleDelete(product.id)} className="px-2 py-1 btn--red flex items-center gap-2">
+                        <BiTrash />
+                        <span>حذف</span>
+                      </Button>
+                    </div>
+                  </td> */}
                 </tr>
               ))
             )}
@@ -214,8 +201,12 @@ const Products = () => {
   );
 };
 
+export default Products;
+
+
+
 const TableSkeleton = ({ columns }) => (
-  <tr className="border-t border-gray-200 dark:border-gray-700">
+  <tr>
     {columns.filter(c => !c.noShow).map((_, index) => (
       <td key={index} className="p-4 text-center">
         <div className="animate-pulse bg-gray-300 rounded h-8 mx-auto"></div>
@@ -237,5 +228,3 @@ const StoreSkeleton = () => (
     ))}
   </div>
 );
-
-export default Products;

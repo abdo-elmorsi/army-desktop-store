@@ -1,5 +1,32 @@
 import { ipcRenderer, contextBridge, type IpcRendererEvent } from "electron";
 
+const validChannels = [
+    "get-users",
+    "add-users",
+    "update-users",
+    "delete-users",
+    "get-products",
+    "get-products-by-id",
+    "add-products",
+    "update-products",
+    "delete-products",
+    "get-transactions",
+    "get-first-date-in-transactions",
+    "delete-all-transactions",
+    "get-transactions-by-id",
+    "add-transactions",
+    "update-transactions",
+    "delete-transactions",
+    "get-stores",
+    "add-stores",
+    "update-stores",
+    "delete-stores",
+    "get-units",
+    "add-units",
+    "update-units",
+    "delete-units",
+];
+
 // Expose ipcRenderer methods to the renderer process
 contextBridge.exposeInMainWorld("ipcRenderer", {
     on: (
@@ -12,13 +39,17 @@ contextBridge.exposeInMainWorld("ipcRenderer", {
     ) => ipcRenderer.off(channel, listener),
     send: (channel: string, ...args: any[]) =>
         ipcRenderer.send(channel, ...args),
-    invoke: <T>(channel: string, ...args: any[]): Promise<T> =>
-        ipcRenderer.invoke(channel, ...args),
+    invoke: <T>(channel: string, ...args: any[]): Promise<T> => {
+        if (validChannels.includes(channel)) {
+            return ipcRenderer.invoke(channel, ...args);
+        }
+        throw new Error("Invalid channel");
+    },
 
     showPrompt: (message: any, defaultValue: any) =>
         ipcRenderer.invoke("show-prompt", message, defaultValue),
 
-    // print: () => ipcRenderer.send("print"), // Add this line for printing
+    // Additional methods as needed
 });
 
 // DOM Ready utility function

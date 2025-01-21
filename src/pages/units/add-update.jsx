@@ -1,12 +1,12 @@
 import React, { useEffect } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { useIndexedDB, useInput } from '@/hooks';
-import { Button, Input } from '@/components';
+import { useDatabase, useInput } from '@/hooks';
+import { Button, Input, Error } from '@/components';
 
 const UnitsForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { data: units, addItem, loading, updateItem } = useIndexedDB('units');
+  const { data: units, loading, error, addItem, updateItem } = useDatabase('units');
 
   const name = useInput("", null);
   const description = useInput("", null);
@@ -25,14 +25,19 @@ const UnitsForm = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const data = [name.value, description.value];
     if (id) {
-      updateItem(parseInt(id), { name: name.value, description: description.value });
+      updateItem(parseInt(id), data);
     } else {
-      addItem({ name: name.value, description: description.value });
+      addItem(data);
     }
     navigate('/units');
   };
 
+
+  if (error) {
+    return <Error message={error} onRetry={() => window.location.reload()} />;
+  }
 
   if (loading && id) {
     return (
@@ -56,7 +61,7 @@ const UnitsForm = () => {
       <nav className="text-gray-700 dark:text-gray-300 mb-4">
         <ul className="list-reset flex">
           <li>
-            <Link to="/units" className="text-blue-500 dark:text-blue-400 hover:underline">
+            <Link to="/units" className="text-primary hover:underline">
               وحدات القياس
             </Link>
           </li>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Input, Button } from '@/components';
-import { useInput, useIndexedDB } from '@/hooks';
+import { useInput, useDatabase } from '@/hooks';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
 const Login = () => {
@@ -9,31 +9,35 @@ const Login = () => {
   const navigate = useNavigate();
   const queryParams = new URLSearchParams(location.search);
   const userName = useInput(queryParams.get('username') || "", null);
+
   const password = useInput("", null);
   const [showPass, setShowPass] = useState(false);
-  const { loginUser, error, loading, data } = useIndexedDB('users');
+
+  const { loading, data: users, error } = useDatabase('users');
 
   const handleShowPass = () => setShowPass(!showPass);
 
   useEffect(() => {
-    if (!loading && data.length === 0) {
+    if (!loading && users.length === 0) {
       navigate('/sign-up');
     }
-  }, [data.length, loading, navigate]);
+  }, [users.length, loading, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    try {
-      const user = await loginUser(userName.value, password.value);
-      if (user) {
-        const { password, ...others } = user;
-        localStorage.setItem('user', JSON.stringify(others));
-        return navigate('/'); // Navigate to home screen
-      }
-    } catch (err) {
-      console.error('Login error:', err);
+    const user = users.find(user => user.username === userName.value && user.password === password.value);
+    if (user) {
+      const { password, ...others } = user;
+
+      localStorage.setItem('user', JSON.stringify(others));
+      navigate('/');
+    } else {
+      alert("اسم المستخدم او كلمه المرور غير صحيحه")
     }
   };
+
+
+
 
   return (
     <div className='h-screen flex  items-center justify-center bg-gray-100 dark:bg-gray-900'>
@@ -63,6 +67,7 @@ const Login = () => {
           </Button>
         </form>
         {error && <p className="mt-4 text-red-600 text-center">{error}</p>}
+
       </div>
     </div>
   );
