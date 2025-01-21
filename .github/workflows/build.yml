@@ -28,6 +28,11 @@ jobs:
               run: |
                   npm run build
 
+            - name: Create Tag
+              run: |
+                  git tag v${{ github.event.release.tag_name }}
+                  git push origin v${{ github.event.release.tag_name }}
+
             - name: Upload Release Assets
               uses: softprops/action-gh-release@v1
               with:
