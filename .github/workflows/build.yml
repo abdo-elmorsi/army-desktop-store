@@ -1,0 +1,36 @@
+name: Build Electron App
+
+on:
+    push:
+        branches:
+            - main
+    release:
+        types: [created]
+
+jobs:
+    build:
+        runs-on: windows-latest
+
+        steps:
+            - name: Checkout Repository
+              uses: actions/checkout@v3
+
+            - name: Set up Node.js
+              uses: actions/setup-node@v3
+              with:
+                  node-version: "16"
+
+            - name: Install Dependencies
+              run: |
+                  npm install
+
+            - name: Build App
+              run: |
+                  npm run build  # سيقوم بتشغيل الأمر "tsc && vite build && electron-builder"
+
+            - name: Upload Release Assets
+              uses: softprops/action-gh-release@v1
+              with:
+                  files: "release/${{ github.event.release.tag_name }}/*"
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
