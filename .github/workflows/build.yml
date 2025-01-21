@@ -18,7 +18,7 @@ jobs:
             - name: Set up Node.js
               uses: actions/setup-node@v3
               with:
-                  node-version: "16"
+                  node-version: "18"
 
             - name: Install Dependencies
               run: |
@@ -26,7 +26,7 @@ jobs:
 
             - name: Build App
               run: |
-                  npm run build  # سيقوم بتشغيل الأمر "tsc && vite build && electron-builder"
+                  npm run build
 
             - name: Upload Release Assets
               uses: softprops/action-gh-release@v1
