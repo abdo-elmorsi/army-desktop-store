@@ -34,8 +34,13 @@ jobs:
               run: |
                   git config --global user.name 'github-actions[bot]'
                   git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-                  git tag ${{ github.event.release.tag_name }}
-                  git push origin ${{ github.event.release.tag_name }} || echo "Tag already exists, skipping push."
+                  if [ ! -z "${{ github.event.release.tag_name }}" ]; then
+                      git tag ${{ github.event.release.tag_name }}
+                      git push origin ${{ github.event.release.tag_name }} || echo "Tag already exists, skipping push."
+                  else
+                      echo "No tag name provided for release."
+                      exit 1
+                  fi
 
             - name: Upload Release Assets
               uses: softprops/action-gh-release@v1
