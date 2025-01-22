@@ -35,16 +35,15 @@ jobs:
               run: |
                   git config --global user.name 'github-actions[bot]'
                   git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-                  # Use a predefined tag name or the tag from the release event
-                  TAG_NAME=${{ github.event.release.tag_name || 'v1.0.0' }}  # Change 'v1.0.0' to your desired tag
-                  git tag $TAG_NAME
-                  git push origin $TAG_NAME || echo "Tag already exists, skipping push."
+                  $env:TAG_NAME = "${{ github.event.release.tag_name || 'v1.0.0' }}"
+                  git tag $env:TAG_NAME
+                  git push origin $env:TAG_NAME || echo "Tag already exists, skipping push."
 
             - name: Upload Release Assets
               uses: softprops/action-gh-release@v1
               with:
-                  tag_name: ${{ github.event.release.tag_name || 'v1.0.0' }}  # Change as needed
+                  tag_name: ${{ steps.create_tag.outputs.TAG_NAME }}
                   files: "release/*"
-                  name: Release ${{ github.event.release.tag_name || 'v1.0.0' }}  # Optional: set the release name
+                  name: Release ${{ steps.create_tag.outputs.TAG_NAME }}
               env:
                   GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
