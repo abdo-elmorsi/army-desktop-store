@@ -29,22 +29,19 @@ jobs:
                   npm run build
 
             - name: Create Tag
+              id: create_tag
               env:
                   GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
               run: |
                   git config --global user.name 'github-actions[bot]'
                   git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-                  if [ ! -z "${{ github.event.release.tag_name }}" ]; then
-                      git tag ${{ github.event.release.tag_name }}
-                      git push origin ${{ github.event.release.tag_name }} || echo "Tag already exists, skipping push."
-                  else
-                      echo "No tag name provided for release."
-                      exit 1
-                  fi
+                  git tag ${{ github.event.release.tag_name }}
+                  git push origin ${{ github.event.release.tag_name }} || echo "Tag already exists, skipping push."
 
             - name: Upload Release Assets
               uses: softprops/action-gh-release@v1
               with:
+                  tag: ${{ github.event.release.tag_name }}  # Explicitly specify the tag
                   files: "release/*"
               env:
                   GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
