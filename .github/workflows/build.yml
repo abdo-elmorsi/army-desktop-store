@@ -34,13 +34,12 @@ jobs:
               run: |
                   git config --global user.name 'github-actions[bot]'
                   git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-                  git tag v${{ github.event.release.tag_name }}
-                  git push origin v${{ github.event.release.tag_name }} || echo "Tag already exists, skipping push."
+                  git tag ${{ github.event.release.tag_name }}
+                  git push origin ${{ github.event.release.tag_name }} || echo "Tag already exists, skipping push."
 
             - name: Upload Release Assets
               uses: softprops/action-gh-release@v1
               with:
-                  files: "release/${{ github.event.release.tag_name }}/*"
+                  files: "release/*"
               env:
                   GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
-                  
