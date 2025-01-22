@@ -35,15 +35,19 @@ jobs:
               run: |
                   git config --global user.name 'github-actions[bot]'
                   git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-                  $env:TAG_NAME = "${{ github.event.release.tag_name || 'v1.0.0' }}"
-                  git tag $env:TAG_NAME
-                  git push origin $env:TAG_NAME || echo "Tag already exists, skipping push."
+                  TAG_NAME=${{ github.event.release.tag_name || 'v1.0.0' }}
+                  if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
+                      echo "Tag $TAG_NAME already exists locally."
+                  else
+                      git tag $TAG_NAME
+                      git push origin $TAG_NAME || echo "Tag already exists on remote, skipping push."
+                  fi
 
             - name: Upload Release Assets
               uses: softprops/action-gh-release@v1
               with:
-                  tag_name: ${{ steps.create_tag.outputs.TAG_NAME }}
+                  tag_name: ${{ github.event.release.tag_name || 'v1.0.0' }}
                   files: "release/*"
-                  name: Release ${{ steps.create_tag.outputs.TAG_NAME }}
+                  name: Release ${{ github.event.release.tag_name || 'v1.0.0' }}
               env:
                   GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
